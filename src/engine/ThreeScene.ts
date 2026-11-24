@@ -125,6 +125,7 @@ export class BoltScene {
     const h = Math.max(container.clientHeight, 300);
     this.camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
     this.camera.position.set(0, 0.42, 6.75);
+    this.updateCameraFraming(w, h);
     this.camera.lookAt(0, 0.08, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -690,11 +691,20 @@ export class BoltScene {
     }
   }
 
+  private updateCameraFraming(w: number, h: number) {
+    const aspect = w / h;
+    this.camera.aspect = aspect;
+    // Adaptive framing: narrow Fold cover screen pulls camera back slightly;
+    // square unfolded Fold inner screen zooms in slightly for rich 3D presence
+    const zDist = aspect < 0.52 ? 7.6 : aspect > 0.78 ? 6.15 : 6.75;
+    this.camera.position.z = zDist;
+    this.camera.updateProjectionMatrix();
+  }
+
   private handleResize() {
     const w = Math.max(this.container.clientWidth, 100);
     const h = Math.max(this.container.clientHeight, 100);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
+    this.updateCameraFraming(w, h);
     this.renderer.setSize(w, h);
   }
 
