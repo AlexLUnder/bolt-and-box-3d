@@ -177,9 +177,14 @@ export class BoltScene {
 
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(container);
+    window.addEventListener('resize', this.onWindowResize);
 
     this.animate();
   }
+
+  private onWindowResize = () => {
+    this.handleResize();
+  };
 
   public setShowcaseMode(enabled: boolean) {
     this.showcaseMode = enabled;
@@ -811,6 +816,7 @@ export class BoltScene {
     dom.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('resize', this.onWindowResize);
     this.envRT.dispose();
     this.pmrem.dispose();
     this.renderer.dispose();
