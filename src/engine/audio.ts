@@ -1,9 +1,60 @@
-// Procedural Web Audio SFX + Cozy Marimba BGM Synthesizer (zero external assets)
+// Adaptive Generative Web Audio Synthesizer (Warm Filtered Kalimba/Marimba + Soft Pad + SFX)
+// Never repeats the exact same 16-step bar: rotates A -> B -> A' -> Bridge phrases + mood by level!
+
+export type MusicMood = 'lobby' | 'sunny' | 'lounge' | 'focus';
+
+interface ChordSpec {
+  bass: number;
+  pad: number[];
+  scale: number[];
+}
+
+const PROGRESSIONS: Record<MusicMood, ChordSpec[]> = {
+  // Light, airy C-major lobby feel
+  lobby: [
+    { bass: 130.81, pad: [261.63, 329.63, 392.0], scale: [523.25, 587.33, 659.25, 783.99, 880.0] },
+    { bass: 174.61, pad: [261.63, 349.23, 440.0], scale: [523.25, 659.25, 698.46, 783.99, 880.0] },
+    { bass: 220.0,  pad: [261.63, 329.63, 440.0], scale: [523.25, 587.33, 659.25, 783.99, 1046.5] },
+    { bass: 196.0,  pad: [246.94, 293.66, 392.0], scale: [493.88, 587.33, 659.25, 783.99, 880.0] }
+  ],
+  // Warm sunny puzzle groove (G major)
+  sunny: [
+    { bass: 196.0,  pad: [246.94, 293.66, 392.0], scale: [392.0, 440.0, 493.88, 587.33, 659.25, 783.99] },
+    { bass: 164.81, pad: [246.94, 329.63, 392.0], scale: [392.0, 493.88, 587.33, 659.25, 783.99] },
+    { bass: 130.81, pad: [261.63, 329.63, 392.0], scale: [523.25, 587.33, 659.25, 783.99, 987.77] },
+    { bass: 146.83, pad: [293.66, 369.99, 440.0], scale: [440.0, 493.88, 587.33, 659.25, 739.99] }
+  ],
+  // Cozy Fmaj7 / Dm9 chill groove
+  lounge: [
+    { bass: 174.61, pad: [261.63, 329.63, 349.23], scale: [440.0, 523.25, 587.33, 659.25, 698.46, 880.0] },
+    { bass: 146.83, pad: [261.63, 293.66, 349.23], scale: [440.0, 523.25, 587.33, 659.25, 783.99] },
+    { bass: 116.54, pad: [233.08, 293.66, 349.23], scale: [466.16, 523.25, 587.33, 698.46, 783.99] },
+    { bass: 130.81, pad: [261.63, 329.63, 392.0],  scale: [392.0, 440.0, 523.25, 659.25, 783.99] }
+  ],
+  // Focused rhythmic pulse for Hard / Super Hard levels (A minor)
+  focus: [
+    { bass: 110.0,  pad: [220.0, 261.63, 329.63], scale: [440.0, 523.25, 587.33, 659.25, 783.99, 880.0] },
+    { bass: 174.61, pad: [220.0, 261.63, 349.23], scale: [440.0, 523.25, 659.25, 698.46, 880.0] },
+    { bass: 130.81, pad: [261.63, 329.63, 392.0], scale: [523.25, 587.33, 659.25, 783.99, 987.77] },
+    { bass: 164.81, pad: [246.94, 329.63, 392.0], scale: [493.88, 587.33, 659.25, 783.99, 880.0] }
+  ]
+};
+
+// 4 rhythmic motif sections (A, B, A', Bridge) so phrases breathe and evolve naturally
+const RHYTHM_SECTIONS: number[][] = [
+  [1, 0, 1, 1, 0, 1, 0, 1], // Section A (melodic)
+  [1, 1, 0, 1, 0, 0, 1, 0], // Section B (syncopated)
+  [1, 0, 0, 1, 1, 0, 1, 1], // Section A' (playful variation)
+  [1, 0, 0, 0, 1, 0, 0, 0]  // Bridge (airy breather so ears never fatigue!)
+];
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private bgmTimer: number | null = null;
   private step = 0;
+  private bar = 0;
+  private lastNoteIdx = 2;
+  private mood: MusicMood = 'lobby';
   private _muted = false;
 
   public get muted(): boolean {
@@ -15,6 +66,15 @@ class SoundEngine {
     if (val) {
       this.stopMusic();
     } else {
+      this.startMusic();
+    }
+  }
+
+  public setMood(nextMood: MusicMood) {
+    if (this.mood === nextMood) return;
+    this.mood = nextMood;
+    if (this.bgmTimer !== null) {
+      this.stopMusic();
       this.startMusic();
     }
   }
@@ -33,7 +93,6 @@ class SoundEngine {
     return this.ctx;
   }
 
-  // Call on first user gesture to unlock browser AudioContext & start cozy puzzle BGM
   public unlockAndStartMusic() {
     if (this._muted) return;
     const ctx = this.ensureCtx();
@@ -43,67 +102,82 @@ class SoundEngine {
     }
   }
 
+  private playWarmPluck(ctx: AudioContext, freq: number, vol: number, dur: number, type: OscillatorType = 'sine') {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const filter = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1600, now);
+    filter.frequency.exponentialRampToValueAtTime(520, now + dur);
+
+    gain.gain.setValueAtTime(0.0008, now);
+    gain.gain.linearRampToValueAtTime(vol, now + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.0006, now + dur);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + dur + 0.03);
+  }
+
   public startMusic() {
     if (this._muted || typeof window === 'undefined') return;
     if (this.bgmTimer !== null) return;
     this.ensureCtx();
 
-    // Cheerful, relaxing 16-step C-major / Am7 / Fmaj7 / G6 kalimba-marimba puzzle loop (~108 BPM)
-    const melody: Array<number | null> = [
-      523.25, null, 659.25, 783.99, // C5, -, E5, G5
-      659.25, null, 587.33, 523.25, // E5, -, D5, C5
-      440.0,  null, 523.25, 659.25, // A4, -, C5, E5
-      587.33, null, 493.88, 392.0   // D5, -, B4, G4
-    ];
-    const bass: Array<number | null> = [
-      130.81, null, null, null, // C3
-      174.61, null, null, null, // F3
-      220.0,  null, null, null, // A3
-      196.0,  null, null, null  // G3
-    ];
+    const stepMs = this.mood === 'focus' ? 245 : this.mood === 'lounge' ? 310 : 280;
 
     const tick = () => {
       if (this._muted) return;
       const ctx = this.ensureCtx();
       if (!ctx || ctx.state !== 'running') return;
 
-      const idx = this.step % melody.length;
+      const prog = PROGRESSIONS[this.mood];
+      const stepInBar = this.step % 8;
+      if (stepInBar === 0 && this.step > 0) this.bar++;
       this.step++;
-      const now = ctx.currentTime;
 
-      const mFreq = melody[idx];
-      if (mFreq) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(mFreq, now);
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.045, now + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.34);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.36);
+      const chord = prog[this.bar % prog.length];
+      const sectionIdx = Math.floor(this.bar / 4) % RHYTHM_SECTIONS.length;
+      const pattern = RHYTHM_SECTIONS[sectionIdx];
+
+      // Beat 0: Soft warm bass + gentle filtered chord pad
+      if (stepInBar === 0) {
+        this.playWarmPluck(ctx, chord.bass, 0.032, 0.85, 'triangle');
+        // Soft breathing pad on every 2nd bar so it feels lush, not dense
+        if (this.bar % 2 === 0 || sectionIdx === 3) {
+          chord.pad.forEach((pFreq) => {
+            this.playWarmPluck(ctx, pFreq, 0.012, 1.35, 'sine');
+          });
+        }
       }
 
-      const bFreq = bass[idx];
-      if (bFreq) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(bFreq, now);
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.038, now + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.55);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.58);
+      // Soft off-beat bass pulse in Focus mode
+      if (this.mood === 'focus' && stepInBar === 4) {
+        this.playWarmPluck(ctx, chord.bass * 1.5, 0.02, 0.35, 'triangle');
+      }
+
+      // Generative melodic pluck following smooth stepwise motion inside current chord's pentatonic scale
+      if (pattern[stepInBar] === 1) {
+        // Occasional gentle rest for organic human feel
+        if (sectionIdx !== 3 && Math.random() < 0.14) return;
+        const delta = Math.random() < 0.65 ? (Math.random() < 0.5 ? 1 : -1) : Math.random() < 0.5 ? 2 : -2;
+        this.lastNoteIdx = Math.max(0, Math.min(chord.scale.length - 1, this.lastNoteIdx + delta));
+        const freq = chord.scale[this.lastNoteIdx];
+        const vel = stepInBar === 0 ? 0.036 : 0.026 + Math.random() * 0.01;
+        this.playWarmPluck(ctx, freq, vel, 0.42, 'sine');
       }
     };
 
     tick();
-    this.bgmTimer = window.setInterval(tick, 275);
+    this.bgmTimer = window.setInterval(tick, stepMs);
   }
 
   public stopMusic() {

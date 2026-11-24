@@ -301,7 +301,14 @@ export default function App() {
 
   useEffect(() => {
     sceneRef.current?.setShowcaseMode(screen === 'menu');
-  }, [screen]);
+    if (screen === 'menu') {
+      sound.setMood('lobby');
+    } else if (levelConfig.difficulty !== 'normal') {
+      sound.setMood('focus');
+    } else {
+      sound.setMood(levelConfig.level % 2 === 0 ? 'lounge' : 'sunny');
+    }
+  }, [screen, levelConfig.level, levelConfig.difficulty]);
 
   // Unlock Web Audio & start cozy BGM on first user tap/click (browser autoplay policy)
   useEffect(() => {
