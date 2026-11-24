@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { BarChart3, Flame, Home, Map, Play, ShoppingBag, Star, Volume2, VolumeX } from 'lucide-react';
+import { BarChart3, Box, Calendar, Flame, Home, Lock, Map, Play, ShoppingBag, Star, Volume2, VolumeX } from 'lucide-react';
 import { IAP_SKUS } from '../economy/config';
-import { getLevelMeta } from '../engine/levelGenerator';
-import { EconomyState } from '../engine/types';
+import { getLevelMeta, HANDCRAFTED_LEVELS } from '../engine/levelGenerator';
+import { ChassisShape, EconomyState } from '../engine/types';
 import {
   GiftChestIcon,
   GlossyHeartIcon,
@@ -11,15 +11,19 @@ import {
   PiggyMedallionIcon,
   StreakFlameIcon
 } from './GameIcons';
+import { canClaimDaily } from './LiveOpsModals';
 
-type MenuTab = 'home' | 'stages' | 'shop';
+type MenuTab = 'home' | 'stages' | 'toys' | 'shop';
 
 interface MainMenuProps {
   economy: EconomyState;
   muted: boolean;
   onToggleMute: () => void;
   onPlayLevel: (level: number) => void;
+  onPreviewShape: (level: number) => void;
   onBuySku: (skuId: string) => void;
+  onOpenDaily: () => void;
+  onOpenRace: () => void;
   onOpenUa: () => void;
 }
 
@@ -28,13 +32,17 @@ export function MainMenu({
   muted,
   onToggleMute,
   onPlayLevel,
+  onPreviewShape,
   onBuySku,
+  onOpenDaily,
+  onOpenRace,
   onOpenUa
 }: MainMenuProps) {
   const [tab, setTab] = useState<MenuTab>('home');
   const currentMeta = getLevelMeta(economy.level);
   const stageNumbers = Array.from({ length: 50 }, (_, i) => i + 1);
   const deepMilestones = [150, 350, 700];
+  const dailyReady = canClaimDaily(economy);
 
   return (
     <div className={`menu-overlay ${tab === 'home' ? 'home-transparent' : 'panel-toy'}`}>
@@ -57,6 +65,15 @@ export function MainMenu({
         </div>
 
         <div className="hud-group">
+          <button
+            className="icon-circle-btn daily-btn"
+            onClick={onOpenDaily}
+            title="Daily Bonus"
+            aria-label="Daily Bonus"
+          >
+            <Calendar size={14} strokeWidth={2.6} />
+            {dailyReady && <span className="notif-dot" />}
+          </button>
           <button className="icon-circle-btn" onClick={onToggleMute} title="Toggle Music & SFX" aria-label="Sound">
             {muted ? <VolumeX size={15} strokeWidth={2.6} /> : <Volume2 size={15} strokeWidth={2.6} />}
           </button>
@@ -87,7 +104,7 @@ export function MainMenu({
           {/* Open Center Stage — lets the live 3D toy shine completely unobstructed */}
           <div className="home-stage-spacer" />
 
-          {/* Clean Bottom Action Stack: Stage Pill + 2 Neat Feature Chips + Hero Play CTA */}
+          {/* Clean Bottom Action Stack */}
           <div className="home-bottom-stack">
             <div className="toy-stage-ribbon">
               <span>LV.{currentMeta.level}</span>
@@ -101,16 +118,17 @@ export function MainMenu({
             </div>
 
             <div className="home-quick-row">
-              <button className="quick-card piggy" onClick={() => setTab('shop')}>
-                <PiggyMedallionIcon size={30} />
+              <button className="quick-card race" onClick={onOpenRace}>
+                <StreakFlameIcon size={30} />
                 <div className="quick-card-text">
-                  <span className="quick-title">Piggy Bank</span>
+                  <span className="quick-title">Bolt Rush</span>
                   <div className="quick-bar">
                     <div
-                      className="quick-bar-fill"
-                      style={{ width: `${Math.min(100, Math.round((economy.piggyBankCoins / economy.piggyBankMax) * 100))}%` }}
+                      className="quick-bar-fill race-fill"
+                      style={{ width: `${Math.min(100, Math.round((economy.raceWins / 7) * 100))}%` }}
                     />
                   </div>
+                  <span className="quick-micro">{economy.raceWins}/7 Wins · 10K Pool</span>
                 </div>
               </button>
 
@@ -123,13 +141,18 @@ export function MainMenu({
                   </div>
                 </button>
               ) : (
-                <div className="quick-card streak">
-                  <StreakFlameIcon size={30} />
+                <button className="quick-card piggy" onClick={() => setTab('shop')}>
+                  <PiggyMedallionIcon size={30} />
                   <div className="quick-card-text">
-                    <span className="quick-title">Win Streak</span>
-                    <span className="quick-sub">{economy.streak} in a row</span>
+                    <span className="quick-title">Piggy Bank</span>
+                    <div className="quick-bar">
+                      <div
+                        className="quick-bar-fill"
+                        style={{ width: `${Math.min(100, Math.round((economy.piggyBankCoins / economy.piggyBankMax) * 100))}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
+                </button>
               )}
             </div>
 
@@ -166,7 +189,6 @@ export function MainMenu({
               const m = getLevelMeta(lvl);
               const isCurr = economy.level === lvl;
               const isDone = lvl < economy.level;
-              // Sinusoidal winding stepping-stone offset
               const wave = Math.sin(idx * 0.85) * 76;
 
               return (
@@ -199,7 +221,54 @@ export function MainMenu({
         </div>
       )}
 
-      {/* ==================== TAB 3: TOY WORKSHOP STORE ==================== */}
+      {/* ==================== TAB 3: 3D WORKSHOP TOY COLLECTION ==================== */}
+      {tab === 'toys' && (
+        <div className="saga-scroll">
+          <div className="saga-banner toys-banner">
+            <div className="saga-banner-title">3D WORKSHOP</div>
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: '#e0e7ff' }}>
+              Unlocked: {economy.unlockedModels.length} / {HANDCRAFTED_LEVELS.length} Sculpted Models
+            </div>
+          </div>
+
+          <div className="toy-shelf-grid">
+            {HANDCRAFTED_LEVELS.map((m) => {
+              const unlocked = economy.unlockedModels.includes(m.shape as ChassisShape) || economy.level > m.level;
+              return (
+                <div key={m.shape} className={`toy-shelf-card ${unlocked ? 'unlocked' : 'locked'}`}>
+                  <div className="toy-shelf-top">
+                    <span className="toy-shelf-lv">LV.{m.level}</span>
+                    {unlocked ? (
+                      <Star size={14} fill="#fbbf24" color="#b45309" />
+                    ) : (
+                      <Lock size={13} color="#64748b" />
+                    )}
+                  </div>
+                  <div className="toy-shelf-name">{m.title}</div>
+                  <div className="toy-shelf-sub">{m.colorCount} Colors · {m.shape}</div>
+                  {unlocked ? (
+                    <button
+                      className="toy-inspect-btn"
+                      onClick={() => {
+                        onPreviewShape(m.level);
+                        setTab('home');
+                      }}
+                    >
+                      Inspect 3D
+                    </button>
+                  ) : (
+                    <button className="toy-play-unlock-btn" onClick={() => onPlayLevel(m.level)}>
+                      Play LV.{m.level}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB 4: TOY WORKSHOP STORE ==================== */}
       {tab === 'shop' && (
         <div className="saga-scroll">
           <div className="saga-banner shop-banner">
@@ -250,18 +319,22 @@ export function MainMenu({
         </div>
       )}
 
-      {/* ==================== CHUNKY GAME BOTTOM DOCK ==================== */}
-      <nav className="toy-dock-nav" aria-label="Main Navigation">
+      {/* ==================== CHUNKY 4-TAB GAME BOTTOM DOCK ==================== */}
+      <nav className="toy-dock-nav four-tabs" aria-label="Main Navigation">
         <button className={`dock-tab ${tab === 'stages' ? 'active' : ''}`} onClick={() => setTab('stages')}>
-          <Map size={21} strokeWidth={2.5} />
+          <Map size={20} strokeWidth={2.5} />
           <span>Map</span>
         </button>
         <button className={`dock-tab ${tab === 'home' ? 'active' : ''}`} onClick={() => setTab('home')}>
-          <Home size={22} strokeWidth={2.5} />
+          <Home size={21} strokeWidth={2.5} />
           <span>Home</span>
         </button>
+        <button className={`dock-tab ${tab === 'toys' ? 'active' : ''}`} onClick={() => setTab('toys')}>
+          <Box size={20} strokeWidth={2.5} />
+          <span>Toys</span>
+        </button>
         <button className={`dock-tab ${tab === 'shop' ? 'active' : ''}`} onClick={() => setTab('shop')}>
-          <ShoppingBag size={21} strokeWidth={2.5} />
+          <ShoppingBag size={20} strokeWidth={2.5} />
           <span>Shop</span>
         </button>
       </nav>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Flame, RotateCcw, RotateCw } from 'lucide-react';
 import { BoosterBar } from './components/BoosterBar';
 import { CollectorDock } from './components/CollectorDock';
+import { HexBoltIcon } from './components/GameIcons';
+import { DailyRewardsModal, getTodayKey, RACE_SURVIVOR_CURVE, StreakRaceModal } from './components/LiveOpsModals';
 import { MainMenu } from './components/MainMenu';
 import { ActiveAdModal, FailModal, LevelSelectModal, MockAdOverlay, ShopModal, WinModal } from './components/Modals';
 import { TopHud } from './components/TopHud';
@@ -62,11 +64,20 @@ export default function App() {
   const [showFail, setShowFail] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showLevels, setShowLevels] = useState(false);
+  const [showDaily, setShowDaily] = useState(false);
+  const [showRace, setShowRace] = useState(false);
   const [showUa, setShowUa] = useState(false);
   const [showPlayableCta, setShowPlayableCta] = useState(false);
   const [comboText, setComboText] = useState<{ key: number; label: string } | null>(null);
+  const [flyingBolts2d, setFlyingBolts2d] = useState<
+    Array<{ id: number; color: BoltColor; sx: number; sy: number; tx: number; ty: number }>
+  >([]);
+  const [confettiBurst, setConfettiBurst] = useState<number | null>(null);
+  const [tutPos, setTutPos] = useState<{ x: number; y: number } | null>(null);
+  const [tutStepsDone, setTutStepsDone] = useState(0);
   const [activeAd, setActiveAd] = useState<ActiveAdModal | null>(null);
   const playableTapsRef = useRef(0);
+  const shellRef = useRef<HTMLDivElement | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<BoltScene | null>(null);
@@ -146,6 +157,7 @@ export default function App() {
             combo++;
             sound.playBoxSnap(combo);
             haptics.boxSnap();
+            setConfettiBurst(Date.now() + combo);
             setComboText({
               key: Date.now() + combo,
               label: combo >= 3 ? `AMAZING x${combo}!` : combo === 2 ? 'COMBO x2!' : 'PACKED!'
@@ -193,11 +205,21 @@ export default function App() {
         }
         const cfg = levelRef.current;
         setEconomy((prev) => {
+          const nextRaceWins = prev.raceActive ? Math.min(7, prev.raceWins + 1) : prev.raceWins;
+          const nextSurvivors = prev.raceActive
+            ? RACE_SURVIVOR_CURVE[Math.min(nextRaceWins, RACE_SURVIVOR_CURVE.length - 1)]
+            : prev.raceSurvivors;
+          const unlocked = prev.unlockedModels.includes(cfg.shape)
+            ? prev.unlockedModels
+            : [...prev.unlockedModels, cfg.shape];
           const next: EconomyState = {
             ...prev,
             coins: prev.coins + cfg.coinReward,
             streak: prev.streak + 1,
-            piggyBankCoins: Math.min(prev.piggyBankMax, prev.piggyBankCoins + 60)
+            piggyBankCoins: Math.min(prev.piggyBankMax, prev.piggyBankCoins + 60),
+            unlockedModels: unlocked,
+            raceWins: nextRaceWins,
+            raceSurvivors: nextSurvivors
           };
           return evaluateMilestones({ ...next, level: prev.level + 1 });
         });
@@ -246,8 +268,37 @@ export default function App() {
         return;
       }
 
-      // Execute unscrew
+      // Execute unscrew + launch 2D flying bolt arc toward target crate or buffer well
+      const startPt = sceneRef.current?.getBoltScreenPosition(bolt.id);
+      const shellRect = shellRef.current?.getBoundingClientRect();
+      if (startPt && shellRect) {
+        const matchIdx = boxes.findIndex((bx) => bx.color === bolt.color && bx.filled < 3);
+        const targetEl =
+          matchIdx >= 0
+            ? shellRef.current?.querySelector(`[data-crate-idx="${matchIdx}"]`)
+            : shellRef.current?.querySelector(`[data-rail-idx="${buf.length}"]`);
+        const tRect = targetEl?.getBoundingClientRect();
+        if (tRect) {
+          const flyId = Date.now() + Math.random();
+          setFlyingBolts2d((prev) => [
+            ...prev,
+            {
+              id: flyId,
+              color: bolt.color,
+              sx: startPt.x - shellRect.left,
+              sy: startPt.y - shellRect.top,
+              tx: tRect.left + tRect.width / 2 - shellRect.left,
+              ty: tRect.top + tRect.height / 2 - shellRect.top
+            }
+          ]);
+          setTimeout(() => {
+            setFlyingBolts2d((prev) => prev.filter((f) => f.id !== flyId));
+          }, 360);
+        }
+      }
+
       bolt.removed = true;
+      setTutStepsDone((n) => n + 1);
       sound.playUnscrew();
       haptics.unscrew();
       sceneRef.current?.removeBolt(bolt.id, BOLT_COLORS[bolt.color].hex);
@@ -309,6 +360,27 @@ export default function App() {
       sound.setMood(levelConfig.level % 2 === 0 ? 'lounge' : 'sunny');
     }
   }, [screen, levelConfig.level, levelConfig.difficulty]);
+
+  // Position L1 interactive tutorial hand over the first exposed matching bolt
+  useEffect(() => {
+    if (screen !== 'play' || levelConfig.level !== 1 || tutStepsDone >= 2 || showWin || showFail) {
+      setTutPos(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const cfg = levelRef.current;
+      const activeColors = new Set(boxesRef.current.map((b) => b.color));
+      const candidate = cfg.bolts.find(
+        (b) => !b.removed && !isBoltOccluded(b, cfg.plates) && activeColors.has(b.color)
+      );
+      const pt = candidate ? sceneRef.current?.getBoltScreenPosition(candidate.id) : null;
+      const sRect = shellRef.current?.getBoundingClientRect();
+      if (pt && sRect) {
+        setTutPos({ x: pt.x - sRect.left, y: pt.y - sRect.top });
+      }
+    }, 180);
+    return () => clearTimeout(timer);
+  }, [screen, levelConfig.level, tutStepsDone, boltsRemaining, showWin, showFail]);
 
   // Unlock Web Audio & start cozy BGM on first user tap/click (browser autoplay policy)
   useEffect(() => {
@@ -515,7 +587,9 @@ export default function App() {
     setEconomy((prev) => ({
       ...prev,
       hearts: Math.max(1, prev.hearts - 1),
-      streak: prev.seasonPassOwned ? prev.streak : 0
+      streak: prev.seasonPassOwned ? prev.streak : 0,
+      raceActive: prev.seasonPassOwned ? prev.raceActive : false,
+      raceWins: prev.seasonPassOwned ? prev.raceWins : 0
     }));
     initLevel(levelConfig.level);
   };
@@ -534,7 +608,7 @@ export default function App() {
 
   return (
     <div className="app-viewport">
-      <div className="phone-shell">
+      <div className="phone-shell" ref={shellRef}>
         {screen === 'play' && (
           <>
             <TopHud
@@ -645,9 +719,58 @@ export default function App() {
               initLevel(lvl);
               setScreen('play');
             }}
+            onPreviewShape={(lvl) => {
+              initLevel(lvl);
+              showToast(`Inspecting LV.${lvl} 3D Model`);
+            }}
             onBuySku={handleBuySku}
+            onOpenDaily={() => setShowDaily(true)}
+            onOpenRace={() => setShowRace(true)}
             onOpenUa={() => setShowUa(true)}
           />
+        )}
+
+        {/* Flying 2D Bolt Arcs (from 3D screw -> Crate / Buffer Well) */}
+        {flyingBolts2d.map((fb) => (
+          <div
+            key={fb.id}
+            className="flying-bolt-2d"
+            style={{
+              ['--sx' as string]: `${fb.sx}px`,
+              ['--sy' as string]: `${fb.sy}px`,
+              ['--tx' as string]: `${fb.tx}px`,
+              ['--ty' as string]: `${fb.ty}px`
+            }}
+          >
+            <HexBoltIcon color={fb.color} size={28} />
+          </div>
+        ))}
+
+        {/* Confetti Burst on Crate Seal */}
+        {confettiBurst && (
+          <div key={confettiBurst} className="confetti-layer">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <span
+                key={i}
+                className="confetti-bit"
+                style={{
+                  left: `${18 + (i * 5) % 64}%`,
+                  background: ['#ef4444', '#3b82f6', '#22c55e', '#fbbf24', '#a855f7', '#f97316'][i % 6],
+                  animationDelay: `${(i % 4) * 35}ms`,
+                  ['--dx' as string]: `${(i % 2 === 0 ? 1 : -1) * (18 + (i * 9) % 45)}px`
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Level 1 Interactive Tutorial Hand */}
+        {tutPos && (
+          <div className="tut-hand-wrap" style={{ left: tutPos.x, top: tutPos.y }}>
+            <div className="tut-ring" />
+            <div className="tut-pointer">👆</div>
+            <div className="tut-tip">Tap matching bolt!</div>
+          </div>
         )}
 
         {toast && <div className="toast">{toast}</div>}
@@ -698,6 +821,52 @@ export default function App() {
               showToast(`Loaded Level ${lvl}`);
             }}
             onClose={() => setShowLevels(false)}
+          />
+        )}
+
+        {showDaily && (
+          <DailyRewardsModal
+            economy={economy}
+            onClaim={(coins) => {
+              setEconomy((prev) => ({
+                ...prev,
+                coins: prev.coins + coins,
+                dailyDay: (prev.dailyDay % 7) + 1,
+                lastDailyClaimDate: getTodayKey()
+              }));
+              sound.playWin();
+              showToast(`+${coins} Daily Bonus Coins!`);
+              setShowDaily(false);
+            }}
+            onClose={() => setShowDaily(false)}
+          />
+        )}
+
+        {showRace && (
+          <StreakRaceModal
+            economy={economy}
+            onClaimGrandPrize={(share) => {
+              setEconomy((prev) => ({
+                ...prev,
+                coins: prev.coins + share,
+                raceActive: true,
+                raceWins: 0,
+                raceSurvivors: 100
+              }));
+              sound.playWin();
+              showToast(`Bolt Rush Won! +${share} Coins!`);
+              setShowRace(false);
+            }}
+            onRestartRace={() => {
+              setEconomy((prev) => ({
+                ...prev,
+                raceActive: true,
+                raceWins: 0,
+                raceSurvivors: 100
+              }));
+              showToast('New Bolt Rush Race started!');
+            }}
+            onClose={() => setShowRace(false)}
           />
         )}
 

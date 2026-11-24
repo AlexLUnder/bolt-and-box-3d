@@ -194,6 +194,20 @@ export class BoltScene {
     this.targetTheta = (this.targetTheta ?? this.theta) + deltaRad;
   }
 
+  public getBoltScreenPosition(boltId: string): { x: number; y: number } | null {
+    const entry = this.boltMeshes.get(boltId);
+    if (!entry) return null;
+    this.pivot.updateMatrixWorld(true);
+    const worldPos = new THREE.Vector3();
+    entry.group.getWorldPosition(worldPos);
+    worldPos.project(this.camera);
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    return {
+      x: rect.left + ((worldPos.x + 1) / 2) * rect.width,
+      y: rect.top + ((-worldPos.y + 1) / 2) * rect.height
+    };
+  }
+
   private buildChassis(shape: ChassisShape) {
     while (this.chassisGroup.children.length > 0) {
       this.chassisGroup.remove(this.chassisGroup.children[0]);

@@ -1,0 +1,18 @@
+{
+  "name": "Bolt & Box 3D",
+  "short_name": "Bolt & Box",
+  "description": "Tactile 3D Unscrew & Color-Box Sort Puzzle",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#e8f4fe",
+  "theme_color": "#e8f4fe",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

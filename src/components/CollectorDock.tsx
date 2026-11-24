@@ -41,6 +41,7 @@ export function CollectorDock({
           return (
             <div
               key={box.id}
+              data-crate-idx={idx}
               className="crate-slot active"
               style={{
                 ['--crate-main' as string]: c.hex,
@@ -76,7 +77,7 @@ export function CollectorDock({
         {Array.from({ length: maxBufferSlots }).map((_, idx) => {
           const color = buffer[idx];
           return (
-            <div key={`buf_${idx}`} className={`rail-well ${danger && !color ? 'warn' : ''}`}>
+            <div key={`buf_${idx}`} data-rail-idx={idx} className={`rail-well ${danger && !color ? 'warn' : ''}`}>
               {color && (
                 <div className="bolt-pop">
                   <HexBoltIcon color={color} size={27} />

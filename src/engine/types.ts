@@ -121,6 +121,13 @@ export interface EconomyState {
   piggyBankCoins: number;
   piggyBankMax: number;
   seasonPassOwned: boolean;
+  // Meta & LiveOps
+  unlockedModels: ChassisShape[];
+  dailyDay: number; // 1..7
+  lastDailyClaimDate: string | null;
+  raceActive: boolean;
+  raceWins: number; // 0..7
+  raceSurvivors: number;
   geoPreset: GeoPresetId;
   storeFeeRate: 0.15 | 0.3;
   sessionStartTs: number;
