@@ -56,6 +56,41 @@ class SoundEngine {
   private lastNoteIdx = 2;
   private mood: MusicMood = 'lobby';
   private _muted = false;
+  private wasPlayingBeforeBg = false;
+  private lifecycleBound = false;
+
+  private bindLifecycle() {
+    if (this.lifecycleBound || typeof document === 'undefined' || typeof window === 'undefined') return;
+    this.lifecycleBound = true;
+
+    const pauseBg = () => {
+      if (this.bgmTimer !== null) {
+        this.wasPlayingBeforeBg = true;
+        this.stopMusic();
+      }
+      if (this.ctx && this.ctx.state === 'running') {
+        this.ctx.suspend().catch(() => {});
+      }
+    };
+
+    const resumeBg = () => {
+      if (document.hidden || this._muted) return;
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+      if (this.wasPlayingBeforeBg) {
+        this.wasPlayingBeforeBg = false;
+        this.startMusic();
+      }
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pauseBg();
+      else resumeBg();
+    });
+    window.addEventListener('pagehide', pauseBg);
+    window.addEventListener('pageshow', resumeBg);
+  }
 
   public get muted(): boolean {
     return this._muted;
@@ -94,6 +129,7 @@ class SoundEngine {
   }
 
   public unlockAndStartMusic() {
+    this.bindLifecycle();
     if (this._muted) return;
     const ctx = this.ensureCtx();
     if (!ctx) return;
