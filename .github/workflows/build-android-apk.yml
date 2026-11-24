@@ -1,0 +1,54 @@
+name: Build Android APK (Bolt & Box 3D)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build web bundle & sync Capacitor Android
+        run: |
+          npm ci
+          npm run build
+          npx cap sync android
+
+      - name: Assemble Debug APK (ready to sideload on Fold 8)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../BoltAndBox3D-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BoltAndBox3D-debug-apk
+          path: BoltAndBox3D-debug.apk
+
+      - name: Publish direct-download Release (latest-apk)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create latest-apk BoltAndBox3D-debug.apk \
+            --title "Bolt & Box 3D — Latest Android APK" \
+            --notes "Direct sideload APK optimized for Galaxy Z Fold (cover + unfolded)." \
+            --clobber || \
+          gh release upload latest-apk BoltAndBox3D-debug.apk --clobber
