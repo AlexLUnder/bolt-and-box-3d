@@ -995,41 +995,48 @@ button:active:not(:disabled) {
 }
 
 .logo-bolt {
-  font-size: 46px;
+  font-size: 60px;
   font-weight: 700;
   color: #fbbf24;
-  -webkit-text-stroke: 2.8px #78350f;
-  text-shadow: 0 4px 0 #78350f;
+  -webkit-text-stroke: 3.4px #78350f;
+  text-shadow: 0 5px 0 #78350f;
   letter-spacing: 0.02em;
 }
 
 .logo-amp {
-  font-size: 32px;
+  font-size: 42px;
   font-weight: 700;
   color: #ffffff;
-  -webkit-text-stroke: 2.2px #1e3a8a;
-  text-shadow: 0 3px 0 #1e3a8a;
+  -webkit-text-stroke: 2.6px #1e3a8a;
+  text-shadow: 0 4px 0 #1e3a8a;
 }
 
 .logo-box {
-  font-size: 48px;
+  font-size: 64px;
   font-weight: 700;
   color: #38bdf8;
-  -webkit-text-stroke: 2.8px #1e3a8a;
-  text-shadow: 0 4px 0 #1e3a8a;
+  -webkit-text-stroke: 3.4px #1e3a8a;
+  text-shadow: 0 5px 0 #1e3a8a;
   letter-spacing: 0.02em;
 }
 
 .logo-3d {
-  font-size: 20px;
+  font-size: 25px;
   font-weight: 700;
   background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
   color: #ffffff;
-  padding: 3px 9px;
-  border-radius: 11px;
-  border: 2.5px solid #ffffff;
-  box-shadow: 0 4px 0 #9f1239;
+  padding: 4px 11px;
+  border-radius: 13px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 5px 0 #9f1239;
   transform: rotate(7deg);
+}
+
+@media (max-width: 375px) {
+  .logo-bolt { font-size: 48px; }
+  .logo-box { font-size: 52px; }
+  .logo-amp { font-size: 34px; }
+  .logo-3d { font-size: 20px; }
 }
 
 .home-stage-spacer {
