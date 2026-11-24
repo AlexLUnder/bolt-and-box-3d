@@ -70,15 +70,28 @@ export function MainMenu({
       {/* ==================== TAB 1: HOME LOBBY ==================== */}
       {tab === 'home' && (
         <div className="home-body">
-          {/* Playful Bouncy Toy Logo */}
+          {/* Big Hero Game Logo */}
           <div className="toy-logo-wrap">
-            <div className="toy-logo">
-              <span className="logo-bolt">BOLT</span>
-              <span className="logo-amp">&amp;</span>
-              <span className="logo-box">BOX</span>
-              <span className="logo-3d">3D</span>
+            <div className="toy-logo-stack">
+              <div className="toy-logo-top">
+                <span className="logo-bolt">BOLT</span>
+                <span className="logo-amp">&amp;</span>
+              </div>
+              <div className="toy-logo-bottom">
+                <span className="logo-box">BOX</span>
+                <span className="logo-3d">3D</span>
+              </div>
             </div>
+          </div>
+
+          {/* Open Center Stage — lets the live 3D toy shine completely unobstructed */}
+          <div className="home-stage-spacer" />
+
+          {/* Clean Bottom Action Stack: Stage Pill + 2 Neat Feature Chips + Hero Play CTA */}
+          <div className="home-bottom-stack">
             <div className="toy-stage-ribbon">
+              <span>LV.{currentMeta.level}</span>
+              <span className="ribbon-sep">·</span>
               <span>{currentMeta.title}</span>
               {currentMeta.difficulty !== 'normal' && (
                 <span className={`ribbon-tag ${currentMeta.difficulty}`}>
@@ -86,47 +99,40 @@ export function MainMenu({
                 </span>
               )}
             </div>
-          </div>
 
-          {/* Floating Illustrated Medallions flanking the live rotating 3D model */}
-          <div className="home-middle">
-            <div className="medallion-col">
-              <button className="medallion-btn" onClick={() => setTab('shop')}>
-                <div className="medallion-orb pink">
-                  <PiggyMedallionIcon size={36} />
+            <div className="home-quick-row">
+              <button className="quick-card piggy" onClick={() => setTab('shop')}>
+                <PiggyMedallionIcon size={30} />
+                <div className="quick-card-text">
+                  <span className="quick-title">Piggy Bank</span>
+                  <div className="quick-bar">
+                    <div
+                      className="quick-bar-fill"
+                      style={{ width: `${Math.min(100, Math.round((economy.piggyBankCoins / economy.piggyBankMax) * 100))}%` }}
+                    />
+                  </div>
                 </div>
-                <span className="medallion-pill">{economy.piggyBankCoins}</span>
               </button>
 
-              {!economy.noAds && (
-                <button className="medallion-btn" onClick={() => setTab('shop')}>
-                  <div className="medallion-orb gold">
-                    <NoAdsMedallionIcon size={36} />
+              {!economy.noAds ? (
+                <button className="quick-card noads" onClick={() => setTab('shop')}>
+                  <NoAdsMedallionIcon size={30} />
+                  <div className="quick-card-text">
+                    <span className="quick-title">No-Ads Pack</span>
+                    <span className="quick-sub">$4.99 · +600</span>
                   </div>
-                  <span className="medallion-pill hot">$4.99</span>
                 </button>
+              ) : (
+                <div className="quick-card streak">
+                  <StreakFlameIcon size={30} />
+                  <div className="quick-card-text">
+                    <span className="quick-title">Win Streak</span>
+                    <span className="quick-sub">{economy.streak} in a row</span>
+                  </div>
+                </div>
               )}
             </div>
 
-            <div className="medallion-col">
-              <div className="medallion-btn">
-                <div className="medallion-orb fire">
-                  <StreakFlameIcon size={36} />
-                </div>
-                <span className="medallion-pill">{economy.streak} Win</span>
-              </div>
-
-              <button className="medallion-btn" onClick={() => setTab('stages')}>
-                <div className="medallion-orb sky">
-                  <GiftChestIcon size={32} />
-                </div>
-                <span className="medallion-pill">50+ Map</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Candy-Glossy Play Button */}
-          <div className="home-cta-wrap">
             <button className="candy-play-btn" onClick={() => onPlayLevel(economy.level)}>
               <span className="candy-shine" />
               <Play size={24} fill="#ffffff" strokeWidth={2.5} />

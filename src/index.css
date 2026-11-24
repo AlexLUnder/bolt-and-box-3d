@@ -962,69 +962,110 @@ button:active:not(:disabled) {
   pointer-events: none;
 }
 
-/* Chunky Bouncy Toy Game Logo */
+/* Chunky Monumental Hero Game Logo */
 .toy-logo-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  padding-top: 4px;
   pointer-events: none;
 }
 
-.toy-logo {
+.toy-logo-stack {
   font-family: 'Fredoka', 'Nunito', sans-serif;
-  font-size: 31px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.9;
+  transform: rotate(-2deg);
+  filter: drop-shadow(0 6px 0 rgba(15, 23, 42, 0.22));
+}
+
+.toy-logo-top {
+  display: flex;
   align-items: baseline;
-  gap: 5px;
-  transform: rotate(-1.5deg);
-  filter: drop-shadow(0 4px 0 rgba(15, 23, 42, 0.25));
+  gap: 6px;
+}
+
+.toy-logo-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -2px;
 }
 
 .logo-bolt {
+  font-size: 46px;
+  font-weight: 700;
   color: #fbbf24;
-  -webkit-text-stroke: 2px #78350f;
-  text-shadow: 0 3px 0 #78350f;
+  -webkit-text-stroke: 2.8px #78350f;
+  text-shadow: 0 4px 0 #78350f;
+  letter-spacing: 0.02em;
 }
 
 .logo-amp {
-  font-size: 22px;
+  font-size: 32px;
+  font-weight: 700;
   color: #ffffff;
-  -webkit-text-stroke: 1.8px #1e3a8a;
-  text-shadow: 0 2px 0 #1e3a8a;
-}
-
-.logo-box {
-  color: #38bdf8;
-  -webkit-text-stroke: 2px #1e3a8a;
+  -webkit-text-stroke: 2.2px #1e3a8a;
   text-shadow: 0 3px 0 #1e3a8a;
 }
 
+.logo-box {
+  font-size: 48px;
+  font-weight: 700;
+  color: #38bdf8;
+  -webkit-text-stroke: 2.8px #1e3a8a;
+  text-shadow: 0 4px 0 #1e3a8a;
+  letter-spacing: 0.02em;
+}
+
 .logo-3d {
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: 700;
   background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
   color: #ffffff;
-  padding: 1px 7px;
-  border-radius: 9px;
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 0 #9f1239;
-  transform: translateY(-4px) rotate(6deg);
+  padding: 3px 9px;
+  border-radius: 11px;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 4px 0 #9f1239;
+  transform: rotate(7deg);
+}
+
+.home-stage-spacer {
+  flex: 1;
+  pointer-events: none;
+}
+
+.home-bottom-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  pointer-events: auto;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .toy-stage-ribbon {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
-  border: 2px solid #93c5fd;
-  box-shadow: 0 3px 0 rgba(15, 23, 42, 0.3);
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
   color: #ffffff;
-  padding: 3px 13px;
+  padding: 4px 14px;
   border-radius: 999px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
+}
+
+.ribbon-sep {
+  opacity: 0.55;
 }
 
 .ribbon-tag {
@@ -1037,85 +1078,78 @@ button:active:not(:disabled) {
 .ribbon-tag.hard { background: #f97316; }
 .ribbon-tag.superhard { background: #a855f7; }
 
-/* Floating Illustrated Side Medallions */
-.home-middle {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: none;
+/* Two clean, balanced feature cards above PLAY */
+.home-quick-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
-.medallion-col {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  pointer-events: auto;
-}
-
-.medallion-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-.medallion-orb {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 5px 0 rgba(15, 23, 42, 0.22), 0 8px 16px rgba(15, 23, 42, 0.2);
-}
-
-.medallion-orb::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 8px;
-  right: 8px;
-  height: 18px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 100%);
-  pointer-events: none;
-}
-
-.medallion-orb.pink { background: radial-gradient(circle at 35% 30%, #fbcfe8, #db2777); }
-.medallion-orb.gold { background: radial-gradient(circle at 35% 30%, #fef08a, #d97706); }
-.medallion-orb.fire { background: radial-gradient(circle at 35% 30%, #fed7aa, #dc2626); }
-.medallion-orb.sky { background: radial-gradient(circle at 35% 30%, #bae6fd, #2563eb); }
-
-.medallion-pill {
-  margin-top: -10px;
-  z-index: 2;
-  background: #1e293b;
+.quick-card {
+  height: 50px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
   border: 2px solid #ffffff;
-  color: #ffffff;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 1px 8px;
-  border-radius: 999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 0 rgba(148, 163, 184, 0.7), 0 6px 14px rgba(15, 23, 42, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
 }
 
-.medallion-pill.hot {
-  background: #dc2626;
+.quick-card.noads {
+  background: linear-gradient(180deg, #fef9c3 0%, #fde68a 100%);
+  box-shadow: 0 4px 0 #d97706, 0 6px 14px rgba(217, 119, 6, 0.22);
+}
+
+.quick-card.piggy {
+  background: linear-gradient(180deg, #fdf2f8 0%, #fce7f3 100%);
+  box-shadow: 0 4px 0 #db2777, 0 6px 14px rgba(219, 39, 119, 0.16);
+}
+
+.quick-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.quick-title {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.quick-sub {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #92400e;
+  line-height: 1;
+}
+
+.quick-bar {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(157, 23, 77, 0.16);
+  overflow: hidden;
+}
+
+.quick-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f472b6, #db2777);
 }
 
 /* Candy-Glossy Play Button */
-.home-cta-wrap {
-  padding: 0 22px;
-  pointer-events: auto;
-}
-
 .candy-play-btn {
   width: 100%;
-  height: 60px;
+  height: 62px;
   border-radius: 22px;
   background: linear-gradient(180deg, #4ade80 0%, #22c55e 48%, #16a34a 100%);
   border: 3px solid #ffffff;
