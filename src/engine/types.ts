@@ -116,6 +116,10 @@ export interface EconomyState {
   coins: number;
   hearts: number;
   maxHearts: number;
+  lastHeartRegenTs: number;
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
+  hapticsEnabled: boolean;
   streak: number;
   noAds: boolean;
   piggyBankCoins: number;

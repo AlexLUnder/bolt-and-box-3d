@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Flame, Layers, ShieldCheck, ShoppingBag, Sparkles, X } from 'lucide-react';
-import { BOOSTER_COSTS, GEO_PRESETS, IAP_SKUS } from '../economy/config';
+import { Clock, Flame, Music, Smartphone, Volume2, X } from 'lucide-react';
+import { BOOSTER_COSTS, GEO_PRESETS, HEART_REGEN_MS, IAP_SKUS } from '../economy/config';
 import { HANDCRAFTED_LEVELS } from '../engine/levelGenerator';
 import { EconomyState } from '../engine/types';
 import {
   AdBadgeIcon,
+  GlossyHeartIcon,
   GoldCoinIcon,
   NoAdsMedallionIcon,
   PiggyMedallionIcon,
@@ -299,47 +300,58 @@ export function ShopModal({
 }) {
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800, fontSize: 16 }}>
-            <ShoppingBag size={18} color="#fbbf24" /> Store (Simulated IAP)
-          </div>
-          <button onClick={onClose} style={{ padding: 4 }}>
-            <X size={18} />
-          </button>
+      <div className="victory-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon gold-ribbon">
+          <span>TREASURE SHOP</span>
         </div>
 
-        <div style={{ fontSize: 11, color: '#94a3b8' }}>
-          Purchases simulate StoreKit / Play Billing receipt validation &amp; fire Freecash/Scrambly S2S postbacks.
+        <div className="modal-sub" style={{ fontWeight: 700 }}>
+          Simulated StoreKit / Play Billing · Fires live S2S Cashback postbacks
         </div>
 
-        {IAP_SKUS.map((sku) => {
-          const ownedNoAds = sku.removesInterstitials && economy.noAds;
-          const piggyLocked = sku.isPiggyBank && economy.piggyBankCoins < 250;
-          return (
-            <div key={sku.id} className={`shop-item ${sku.featured ? 'featured' : ''}`}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {sku.name}
-                  {sku.removesInterstitials && <ShieldCheck size={13} color="#0284c7" />}
+        <div className="shop-cards-list" style={{ maxHeight: 340, overflowY: 'auto', paddingTop: 4 }}>
+          {IAP_SKUS.map((sku) => {
+            const ownedNoAds = sku.removesInterstitials && economy.noAds;
+            const piggyLocked = sku.isPiggyBank && economy.piggyBankCoins < 250;
+            return (
+              <div key={sku.id} className={`toy-shop-card ${sku.featured ? 'featured' : ''}`}>
+                {sku.featured && <div className="best-ribbon">BEST VALUE</div>}
+                <div className="toy-shop-left">
+                  <div className="toy-shop-art">
+                    {sku.removesInterstitials ? (
+                      <NoAdsMedallionIcon size={34} />
+                    ) : sku.isPiggyBank ? (
+                      <PiggyMedallionIcon size={34} />
+                    ) : (
+                      <GoldCoinIcon size={30} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="toy-shop-name" style={{ fontSize: 13.5 }}>
+                      {sku.name}
+                    </div>
+                    <div className="toy-shop-sub">
+                      {sku.isPiggyBank
+                        ? `Banked: ${economy.piggyBankCoins}/${economy.piggyBankMax}`
+                        : sku.subtitle}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: '#64748b' }}>
-                  {sku.isPiggyBank
-                    ? `Current bank: ${economy.piggyBankCoins}/${economy.piggyBankMax} coins`
-                    : sku.subtitle}
-                </div>
+                <button
+                  className="candy-buy-btn"
+                  disabled={ownedNoAds || piggyLocked}
+                  style={{ opacity: ownedNoAds || piggyLocked ? 0.45 : 1 }}
+                  onClick={() => onBuySku(sku.id)}
+                >
+                  {ownedNoAds ? 'OWNED' : `$${sku.priceUsd.toFixed(2)}`}
+                </button>
               </div>
-              <button
-                className="price-btn"
-                disabled={ownedNoAds || piggyLocked}
-                style={{ opacity: ownedNoAds || piggyLocked ? 0.45 : 1 }}
-                onClick={() => onBuySku(sku.id)}
-              >
-                {ownedNoAds ? 'Owned' : `$${sku.priceUsd.toFixed(2)}`}
-              </button>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -356,21 +368,19 @@ export function LevelSelectModal({
 }) {
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 900, fontSize: 16 }}>
-            <Layers size={18} color="#2563eb" /> 3D Puzzle Stages
-          </div>
-          <button onClick={onClose} style={{ padding: 4 }}>
-            <X size={18} />
-          </button>
+      <div className="victory-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon">
+          <span>3D PUZZLE STAGES</span>
         </div>
 
-        <div style={{ fontSize: 11, color: '#64748b' }}>
-          10 hand-crafted 3D toy models + infinite seeded stages after Level 10.
+        <div className="modal-sub" style={{ fontWeight: 700 }}>
+          10 sculpted 3D models + infinite seeded levels after LV.10
         </div>
 
-        <div className="level-grid">
+        <div className="level-grid" style={{ maxHeight: 330, overflowY: 'auto' }}>
           {HANDCRAFTED_LEVELS.map((lvl) => {
             const isCurr = currentLevel === lvl.level;
             return (
@@ -396,6 +406,140 @@ export function LevelSelectModal({
               </button>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SettingsModal({
+  musicEnabled,
+  sfxEnabled,
+  hapticsEnabled,
+  onToggleMusic,
+  onToggleSfx,
+  onToggleHaptics,
+  onClose
+}: {
+  musicEnabled: boolean;
+  sfxEnabled: boolean;
+  hapticsEnabled: boolean;
+  onToggleMusic: () => void;
+  onToggleSfx: () => void;
+  onToggleHaptics: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="modal-backdrop">
+      <div className="victory-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon">
+          <span>SETTINGS</span>
+        </div>
+
+        <div className="settings-list">
+          <button className="setting-row" onClick={onToggleMusic}>
+            <div className="setting-left">
+              <Music size={18} color="#2563eb" />
+              <span>Background Music</span>
+            </div>
+            <span className={`toggle-pill ${musicEnabled ? 'on' : 'off'}`}>{musicEnabled ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button className="setting-row" onClick={onToggleSfx}>
+            <div className="setting-left">
+              <Volume2 size={18} color="#16a34a" />
+              <span>ASMR Sound FX</span>
+            </div>
+            <span className={`toggle-pill ${sfxEnabled ? 'on' : 'off'}`}>{sfxEnabled ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button className="setting-row" onClick={onToggleHaptics}>
+            <div className="setting-left">
+              <Smartphone size={18} color="#9333ea" />
+              <span>Haptic Vibration</span>
+            </div>
+            <span className={`toggle-pill ${hapticsEnabled ? 'on' : 'off'}`}>{hapticsEnabled ? 'ON' : 'OFF'}</span>
+          </button>
+        </div>
+
+        <button className="candy-play-btn" style={{ height: 48 }} onClick={onClose}>
+          <span className="candy-shine" />
+          <span className="candy-play-text" style={{ fontSize: 18 }}>
+            DONE
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function OutOfLivesModal({
+  economy,
+  onWatchAdHeart,
+  onBuyFullRefill,
+  onClose
+}: {
+  economy: EconomyState;
+  onWatchAdHeart: () => void;
+  onBuyFullRefill: () => void;
+  onClose: () => void;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const remainingMs = Math.max(0, HEART_REGEN_MS - (now - (economy.lastHeartRegenTs || now)));
+  const mins = Math.floor(remainingMs / 60000);
+  const secs = Math.floor((remainingMs % 60000) / 1000);
+
+  return (
+    <div className="modal-backdrop">
+      <div className="victory-card fail-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon fail-ribbon">
+          <span>{economy.hearts <= 0 ? 'OUT OF LIVES!' : 'REFILL LIVES'}</span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+          <GlossyHeartIcon size={44} />
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontFamily: 'Fredoka, sans-serif', fontSize: 22, fontWeight: 700, color: '#0f172a' }}>
+              {economy.hearts} / {economy.maxHearts} Lives
+            </div>
+            {economy.hearts < economy.maxHearts && (
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Clock size={12} /> Next life in {mins}:{String(secs).padStart(2, '0')}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="victory-actions">
+          <button className="candy-play-btn" style={{ height: 50 }} onClick={onWatchAdHeart}>
+            <span className="candy-shine" />
+            <AdBadgeIcon size={16} />
+            <span className="candy-play-text" style={{ fontSize: 17 }}>
+              +1 FREE LIFE
+            </span>
+          </button>
+
+          <button
+            className="candy-gold-btn"
+            disabled={economy.coins < BOOSTER_COSTS.refillHearts}
+            style={{ opacity: economy.coins < BOOSTER_COSTS.refillHearts ? 0.5 : 1 }}
+            onClick={onBuyFullRefill}
+          >
+            <span className="candy-shine" />
+            <GoldCoinIcon size={18} />
+            <span>FULL REFILL · {BOOSTER_COSTS.refillHearts} COINS</span>
+          </button>
         </div>
       </div>
     </div>

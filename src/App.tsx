@@ -5,7 +5,16 @@ import { CollectorDock } from './components/CollectorDock';
 import { HexBoltIcon } from './components/GameIcons';
 import { DailyRewardsModal, getTodayKey, RACE_SURVIVOR_CURVE, StreakRaceModal } from './components/LiveOpsModals';
 import { MainMenu } from './components/MainMenu';
-import { ActiveAdModal, FailModal, LevelSelectModal, MockAdOverlay, ShopModal, WinModal } from './components/Modals';
+import {
+  ActiveAdModal,
+  FailModal,
+  LevelSelectModal,
+  MockAdOverlay,
+  OutOfLivesModal,
+  SettingsModal,
+  ShopModal,
+  WinModal
+} from './components/Modals';
 import { TopHud } from './components/TopHud';
 import { UaTelemetryDrawer } from './components/UaTelemetryDrawer';
 import { BOLT_COLORS, BOOSTER_COSTS } from './economy/config';
@@ -16,7 +25,8 @@ import {
   recordAdImpression,
   recordIapPurchase,
   saveEconomy,
-  switchGeoPreset
+  switchGeoPreset,
+  syncHeartRegen
 } from './economy/store';
 import { sound } from './engine/audio';
 import { haptics } from './engine/haptics';
@@ -58,7 +68,6 @@ export default function App() {
   const [boltsRemaining, setBoltsRemaining] = useState(0);
 
   const [screen, setScreen] = useState<'menu' | 'play'>(() => (IS_PLAYABLE_AD ? 'play' : 'menu'));
-  const [muted, setMuted] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [showWin, setShowWin] = useState(false);
   const [showFail, setShowFail] = useState(false);
@@ -66,6 +75,8 @@ export default function App() {
   const [showLevels, setShowLevels] = useState(false);
   const [showDaily, setShowDaily] = useState(false);
   const [showRace, setShowRace] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLives, setShowLives] = useState(false);
   const [showUa, setShowUa] = useState(false);
   const [showPlayableCta, setShowPlayableCta] = useState(false);
   const [comboText, setComboText] = useState<{ key: number; label: string } | null>(null);
@@ -299,6 +310,7 @@ export default function App() {
 
       bolt.removed = true;
       setTutStepsDone((n) => n + 1);
+      sceneRef.current?.setHintBolt(null);
       sound.playUnscrew();
       haptics.unscrew();
       sceneRef.current?.removeBolt(bolt.id, BOLT_COLORS[bolt.color].hex);
@@ -381,6 +393,58 @@ export default function App() {
     }, 180);
     return () => clearTimeout(timer);
   }, [screen, levelConfig.level, tutStepsDone, boltsRemaining, showWin, showFail]);
+
+  // Sync persisted audio & haptics preferences + periodic heart regen
+  useEffect(() => {
+    sound.setMusicEnabled(economy.musicEnabled);
+    sound.setSfxEnabled(economy.sfxEnabled);
+    haptics.setEnabled(economy.hapticsEnabled);
+  }, [economy.musicEnabled, economy.sfxEnabled, economy.hapticsEnabled]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setEconomy((prev) => syncHeartRegen(prev));
+    }, 30000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Passive 6-second idle hint (pulses 1 exposed matching bolt so players never feel stuck)
+  useEffect(() => {
+    sceneRef.current?.setHintBolt(null);
+    if (screen !== 'play' || showWin || showFail || showShop || showLevels || showSettings || showLives || showUa || activeAd) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const cfg = levelRef.current;
+      const activeColors = new Set(boxesRef.current.map((b) => b.color));
+      const exposed = cfg.bolts.filter((b) => !b.removed && !isBoltOccluded(b, cfg.plates));
+      const candidate = exposed.find((b) => activeColors.has(b.color)) || exposed[0];
+      if (candidate) sceneRef.current?.setHintBolt(candidate.id);
+    }, 6000);
+    return () => window.clearTimeout(timer);
+  }, [screen, boltsRemaining, levelConfig.level, showWin, showFail, showShop, showLevels, showSettings, showLives, showUa, activeAd]);
+
+  // Native Android Back gesture / button handler (called by MainActivity.java)
+  useEffect(() => {
+    const w = window as unknown as { __handleAndroidBack?: () => 'handled' | 'exit' };
+    w.__handleAndroidBack = () => {
+      if (activeAd) return 'handled';
+      if (showUa) { setShowUa(false); return 'handled'; }
+      if (showSettings) { setShowSettings(false); return 'handled'; }
+      if (showLives) { setShowLives(false); return 'handled'; }
+      if (showDaily) { setShowDaily(false); return 'handled'; }
+      if (showRace) { setShowRace(false); return 'handled'; }
+      if (showShop) { setShowShop(false); return 'handled'; }
+      if (showLevels) { setShowLevels(false); return 'handled'; }
+      if (showFail) { setShowFail(false); setScreen('menu'); return 'handled'; }
+      if (showWin) { setShowWin(false); setScreen('menu'); return 'handled'; }
+      if (screen === 'play') { setScreen('menu'); return 'handled'; }
+      return 'exit';
+    };
+    return () => {
+      delete w.__handleAndroidBack;
+    };
+  }, [activeAd, screen, showDaily, showFail, showLevels, showLives, showRace, showSettings, showShop, showUa, showWin]);
 
   // Unlock Web Audio & start cozy BGM on first user tap/click (browser autoplay policy)
   useEffect(() => {
@@ -584,14 +648,21 @@ export default function App() {
 
   const handleGiveUp = () => {
     setShowFail(false);
+    const nextHearts = Math.max(0, economy.hearts - 1);
     setEconomy((prev) => ({
       ...prev,
-      hearts: Math.max(1, prev.hearts - 1),
+      hearts: Math.max(0, prev.hearts - 1),
+      lastHeartRegenTs: prev.hearts >= prev.maxHearts ? Date.now() : prev.lastHeartRegenTs,
       streak: prev.seasonPassOwned ? prev.streak : 0,
       raceActive: prev.seasonPassOwned ? prev.raceActive : false,
       raceWins: prev.seasonPassOwned ? prev.raceWins : 0
     }));
-    initLevel(levelConfig.level);
+    if (nextHearts <= 0) {
+      setShowLives(true);
+      setScreen('menu');
+    } else {
+      initLevel(levelConfig.level);
+    }
   };
 
   const handleJumpLevel = (lvl: number) => {
@@ -614,20 +685,18 @@ export default function App() {
             <TopHud
               economy={economy}
               difficulty={levelConfig.difficulty}
-              muted={muted}
-              onToggleMute={() => {
-                sound.muted = !muted;
-                setMuted(!muted);
-              }}
               onRestart={() => initLevel(levelConfig.level)}
               onOpenHome={() => setScreen('menu')}
+              onOpenLives={() => setShowLives(true)}
               onOpenShop={() => setShowShop(true)}
               onOpenLevels={() => setShowLevels(true)}
+              onOpenSettings={() => setShowSettings(true)}
               onOpenUa={() => setShowUa(true)}
             />
 
             <CollectorDock
               activeBoxes={activeBoxes}
+              nextBoxColor={boxQueue[0]}
               maxBoxSlots={maxBoxSlots}
               buffer={buffer}
               maxBufferSlots={maxBufferSlots}
@@ -707,14 +776,12 @@ export default function App() {
         {screen === 'menu' && (
           <MainMenu
             economy={economy}
-            muted={muted}
-            onToggleMute={() => {
-              const next = !muted;
-              sound.muted = next;
-              setMuted(next);
-            }}
             onPlayLevel={(lvl) => {
               sound.unlockAndStartMusic();
+              if (economy.hearts <= 0) {
+                setShowLives(true);
+                return;
+              }
               setEconomy((prev) => ({ ...prev, level: lvl }));
               initLevel(lvl);
               setScreen('play');
@@ -724,8 +791,10 @@ export default function App() {
               showToast(`Inspecting LV.${lvl} 3D Model`);
             }}
             onBuySku={handleBuySku}
+            onOpenLives={() => setShowLives(true)}
             onOpenDaily={() => setShowDaily(true)}
             onOpenRace={() => setShowRace(true)}
+            onOpenSettings={() => setShowSettings(true)}
             onOpenUa={() => setShowUa(true)}
           />
         )}
@@ -868,6 +937,46 @@ export default function App() {
               showToast('New Bolt Rush Race started!');
             }}
             onClose={() => setShowRace(false)}
+          />
+        )}
+
+        {showSettings && (
+          <SettingsModal
+            musicEnabled={economy.musicEnabled}
+            sfxEnabled={economy.sfxEnabled}
+            hapticsEnabled={economy.hapticsEnabled}
+            onToggleMusic={() => setEconomy((prev) => ({ ...prev, musicEnabled: !prev.musicEnabled }))}
+            onToggleSfx={() => setEconomy((prev) => ({ ...prev, sfxEnabled: !prev.sfxEnabled }))}
+            onToggleHaptics={() => setEconomy((prev) => ({ ...prev, hapticsEnabled: !prev.hapticsEnabled }))}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+
+        {showLives && (
+          <OutOfLivesModal
+            economy={economy}
+            onWatchAdHeart={() =>
+              triggerAd('rv', 'Refill +1 Free Life', () => {
+                setEconomy((prev) => ({
+                  ...prev,
+                  hearts: Math.min(prev.maxHearts, prev.hearts + 1)
+                }));
+                showToast('+1 Life added!');
+                setShowLives(false);
+              })
+            }
+            onBuyFullRefill={() => {
+              if (economy.coins < BOOSTER_COSTS.refillHearts) return;
+              setEconomy((prev) => ({
+                ...prev,
+                coins: prev.coins - BOOSTER_COSTS.refillHearts,
+                hearts: prev.maxHearts,
+                lastHeartRegenTs: Date.now()
+              }));
+              showToast('Lives refilled to 5/5!');
+              setShowLives(false);
+            }}
+            onClose={() => setShowLives(false)}
           />
         )}
 

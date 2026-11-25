@@ -95,6 +95,8 @@ export class BoltScene {
     string,
     { group: THREE.Group; headMat: THREE.MeshStandardMaterial; normal: THREE.Vector3 }
   >();
+  private hintBoltId: string | null = null;
+  private levelDisposables: Array<{ dispose: () => void }> = [];
   private flyingBolts: FlyingBolt[] = [];
   private fallingPlates: FallingPlate[] = [];
   private particles: Particle[] = [];
@@ -192,6 +194,28 @@ export class BoltScene {
       this.targetTheta = null;
       this.phi = 0.24;
     }
+  }
+
+  public setHintBolt(boltId: string | null) {
+    if (this.hintBoltId && this.hintBoltId !== boltId) {
+      const prev = this.boltMeshes.get(this.hintBoltId);
+      if (prev) {
+        prev.group.scale.setScalar(1.02);
+        prev.headMat.emissiveIntensity = 0.16;
+      }
+    }
+    this.hintBoltId = boltId;
+  }
+
+  private disposeLevelResources() {
+    for (const d of this.levelDisposables) {
+      try {
+        d.dispose();
+      } catch {
+        // ignore already disposed
+      }
+    }
+    this.levelDisposables = [];
   }
 
   public rotateBy(deltaRad: number) {
@@ -465,6 +489,7 @@ export class BoltScene {
   }
 
   public loadLevel(config: LevelConfig) {
+    this.hintBoltId = null;
     this.buildChassis(config.shape);
 
     for (const g of this.plateMeshes.values()) this.pivot.remove(g);
@@ -472,6 +497,7 @@ export class BoltScene {
     for (const f of this.flyingBolts) this.pivot.remove(f.mesh);
     for (const fp of this.fallingPlates) this.pivot.remove(fp.mesh);
     for (const pt of this.particles) this.pivot.remove(pt.mesh);
+    this.disposeLevelResources();
 
     this.plateMeshes.clear();
     this.boltMeshes.clear();
@@ -492,6 +518,7 @@ export class BoltScene {
       opacity: 0.65,
       side: THREE.DoubleSide
     });
+    this.levelDisposables.push(ringGeo, ringMat);
 
     for (const plate of config.plates) {
       const group = new THREE.Group();
@@ -521,9 +548,9 @@ export class BoltScene {
       group.add(mesh);
 
       const edgeGeo = new THREE.EdgesGeometry(geo, 28);
-      group.add(
-        new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }))
-      );
+      const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+      group.add(new THREE.LineSegments(edgeGeo, edgeMat));
+      this.levelDisposables.push(geo, mat, edgeGeo, edgeMat);
 
       const plateBolts = config.bolts.filter((b) => b.plateId === plate.id);
       for (const pb of plateBolts) {
@@ -759,6 +786,16 @@ export class BoltScene {
       part.rotation.y += dt * 1.8;
     }
 
+    // Gentle passive hint pulse on suggested bolt
+    if (this.hintBoltId) {
+      const hintEntry = this.boltMeshes.get(this.hintBoltId);
+      if (hintEntry) {
+        const pulse = Math.sin(this.elapsedTime * 7);
+        hintEntry.group.scale.setScalar(1.06 + pulse * 0.11);
+        hintEntry.headMat.emissiveIntensity = 0.25 + (pulse * 0.5 + 0.5) * 0.45;
+      }
+    }
+
     if (this.shakeTime > 0) {
       this.shakeTime -= dt;
       this.camera.position.x = (Math.random() - 0.5) * 0.07;
@@ -817,6 +854,7 @@ export class BoltScene {
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
     window.removeEventListener('resize', this.onWindowResize);
+    this.disposeLevelResources();
     this.envRT.dispose();
     this.pmrem.dispose();
     this.renderer.dispose();

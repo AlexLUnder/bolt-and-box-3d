@@ -37,17 +37,15 @@ export function DailyRewardsModal({
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 900, fontSize: 17 }}>
-            <Calendar size={18} color="#2563eb" /> Daily Bonus
-          </div>
-          <button onClick={onClose} style={{ padding: 4 }}>
-            <X size={18} />
-          </button>
+      <div className="victory-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon">
+          <span>DAILY BONUS</span>
         </div>
 
-        <div className="modal-sub">
+        <div className="modal-sub" style={{ fontWeight: 700 }}>
           Log in every day to build your coin stash for Hard levels!
         </div>
 
@@ -74,12 +72,15 @@ export function DailyRewardsModal({
         </div>
 
         <button
-          className="btn-primary"
+          className="candy-play-btn"
           disabled={!claimable}
-          style={{ opacity: claimable ? 1 : 0.5 }}
+          style={{ height: 50, opacity: claimable ? 1 : 0.5 }}
           onClick={() => onClaim(currentReward.coins)}
         >
-          {claimable ? `Claim Day ${economy.dailyDay} (+${currentReward.coins} Coins)` : 'Claimed Today ✓'}
+          <span className="candy-shine" />
+          <span className="candy-play-text" style={{ fontSize: 17 }}>
+            {claimable ? `CLAIM +${currentReward.coins} COINS` : 'CLAIMED TODAY ✓'}
+          </span>
         </button>
       </div>
     </div>
@@ -102,14 +103,12 @@ export function StreakRaceModal({
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card" style={{ borderColor: '#f59e0b' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 900, fontSize: 17, color: '#b45309' }}>
-            <Flame size={19} fill="#f97316" color="#ea580c" /> Bolt Rush Race
-          </div>
-          <button onClick={onClose} style={{ padding: 4 }}>
-            <X size={18} />
-          </button>
+      <div className="victory-card">
+        <button className="modal-x-btn" onClick={onClose} aria-label="Close">
+          <X size={16} strokeWidth={2.8} />
+        </button>
+        <div className="victory-ribbon gold-ribbon">
+          <span>BOLT RUSH RACE</span>
         </div>
 
         <div className="race-hero">
@@ -118,17 +117,20 @@ export function StreakRaceModal({
             <span>{RACE_PRIZE_POOL.toLocaleString()} COINS POOL</span>
           </div>
           <div className="race-meta">
-            <span><Users size={12} /> {economy.raceSurvivors} / 100 players left</span>
+            <span>
+              <Users size={12} /> {economy.raceSurvivors} / 100 players left
+            </span>
             <span>·</span>
-            <span>Est. share: <b>+{share}</b></span>
+            <span>
+              Est. share: <b>+{share}</b>
+            </span>
           </div>
         </div>
 
-        <div className="modal-sub">
+        <div className="modal-sub" style={{ fontWeight: 700 }}>
           Win <b>7 levels in a row</b> without failing to split the 10,000 Coin Grand Prize!
         </div>
 
-        {/* 7-Step Bridge */}
         <div className="race-steps">
           {[1, 2, 3, 4, 5, 6, 7].map((step) => {
             const done = step <= economy.raceWins;
@@ -142,16 +144,23 @@ export function StreakRaceModal({
         </div>
 
         {finished ? (
-          <button className="btn-gold" onClick={() => onClaimGrandPrize(share)}>
-            Claim Your Share (+{share} Coins!)
+          <button className="candy-gold-btn" onClick={() => onClaimGrandPrize(share)}>
+            <span className="candy-shine" />
+            <span>CLAIM YOUR SHARE (+{share} COINS!)</span>
           </button>
         ) : !economy.raceActive ? (
-          <button className="btn-primary" onClick={onRestartRace}>
-            Start New 7-Win Race
+          <button className="candy-play-btn" style={{ height: 50 }} onClick={onRestartRace}>
+            <span className="candy-shine" />
+            <span className="candy-play-text" style={{ fontSize: 17 }}>
+              START NEW RACE
+            </span>
           </button>
         ) : (
-          <button className="btn-primary" onClick={onClose}>
-            Keep Racing ({economy.raceWins}/7 Wins)
+          <button className="candy-play-btn" style={{ height: 50 }} onClick={onClose}>
+            <span className="candy-shine" />
+            <span className="candy-play-text" style={{ fontSize: 17 }}>
+              KEEP RACING ({economy.raceWins}/7)
+            </span>
           </button>
         )}
       </div>

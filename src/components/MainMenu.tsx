@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Box, Calendar, Flame, Home, Lock, Map, Play, ShoppingBag, Star, Volume2, VolumeX } from 'lucide-react';
+import { BarChart3, Box, Calendar, Flame, Home, Lock, Map, Play, Settings, ShoppingBag, Star } from 'lucide-react';
 import { IAP_SKUS } from '../economy/config';
 import { getLevelMeta, HANDCRAFTED_LEVELS } from '../engine/levelGenerator';
 import { ChassisShape, EconomyState } from '../engine/types';
@@ -17,25 +17,25 @@ type MenuTab = 'home' | 'stages' | 'toys' | 'shop';
 
 interface MainMenuProps {
   economy: EconomyState;
-  muted: boolean;
-  onToggleMute: () => void;
   onPlayLevel: (level: number) => void;
   onPreviewShape: (level: number) => void;
   onBuySku: (skuId: string) => void;
+  onOpenLives: () => void;
   onOpenDaily: () => void;
   onOpenRace: () => void;
+  onOpenSettings: () => void;
   onOpenUa: () => void;
 }
 
 export function MainMenu({
   economy,
-  muted,
-  onToggleMute,
   onPlayLevel,
   onPreviewShape,
   onBuySku,
+  onOpenLives,
   onOpenDaily,
   onOpenRace,
+  onOpenSettings,
   onOpenUa
 }: MainMenuProps) {
   const [tab, setTab] = useState<MenuTab>('home');
@@ -49,12 +49,12 @@ export function MainMenu({
       {/* Top Resource Bar */}
       <header className="top-hud">
         <div className="hud-group">
-          <div className="resource-pill">
+          <button className="resource-pill" onClick={onOpenLives} title="Lives">
             <span className="res-icon">
               <GlossyHeartIcon size={18} />
             </span>
             <span className="res-val">{economy.hearts}</span>
-          </div>
+          </button>
           <button className="resource-pill coin-pill" onClick={() => setTab('shop')}>
             <span className="res-icon">
               <GoldCoinIcon size={18} />
@@ -74,8 +74,8 @@ export function MainMenu({
             <Calendar size={14} strokeWidth={2.6} />
             {dailyReady && <span className="notif-dot" />}
           </button>
-          <button className="icon-circle-btn" onClick={onToggleMute} title="Toggle Music & SFX" aria-label="Sound">
-            {muted ? <VolumeX size={15} strokeWidth={2.6} /> : <Volume2 size={15} strokeWidth={2.6} />}
+          <button className="icon-circle-btn" onClick={onOpenSettings} title="Settings" aria-label="Settings">
+            <Settings size={15} strokeWidth={2.6} />
           </button>
           <button className="ua-chip" onClick={onOpenUa} title="UA & CPE Simulator">
             <BarChart3 size={12} strokeWidth={2.6} />

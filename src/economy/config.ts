@@ -1,14 +1,16 @@
 import { BoltColor, CpeMilestone, GeoPreset, GeoPresetId, IapSku } from '../engine/types';
 
-export const BOLT_COLORS: Record<BoltColor, { hex: string; light: string; label: string }> = {
-  red: { hex: '#ef4444', light: '#fca5a5', label: 'Red' },
-  blue: { hex: '#3b82f6', light: '#93c5fd', label: 'Blue' },
-  green: { hex: '#22c55e', light: '#86efac', label: 'Green' },
-  yellow: { hex: '#eab308', light: '#fef08a', label: 'Yellow' },
-  purple: { hex: '#a855f7', light: '#d8b4fe', label: 'Purple' },
-  orange: { hex: '#f97316', light: '#fdba74', label: 'Orange' },
-  cyan: { hex: '#06b6d4', light: '#67e8f9', label: 'Cyan' }
+export const BOLT_COLORS: Record<BoltColor, { hex: string; light: string; label: string; symbol: string }> = {
+  red: { hex: '#ef4444', light: '#fca5a5', label: 'Red', symbol: '●' },
+  blue: { hex: '#3b82f6', light: '#93c5fd', label: 'Blue', symbol: '▲' },
+  green: { hex: '#22c55e', light: '#86efac', label: 'Green', symbol: '■' },
+  yellow: { hex: '#eab308', light: '#fef08a', label: 'Yellow', symbol: '★' },
+  purple: { hex: '#a855f7', light: '#d8b4fe', label: 'Purple', symbol: '◆' },
+  orange: { hex: '#f97316', light: '#fdba74', label: 'Orange', symbol: '✚' },
+  cyan: { hex: '#06b6d4', light: '#67e8f9', label: 'Cyan', symbol: '⬟' }
 };
+
+export const HEART_REGEN_MS = 20 * 60 * 1000; // +1 Heart every 20 minutes
 
 export const GEO_PRESETS: Record<GeoPresetId, GeoPreset> = {
   us_ios: {
@@ -169,5 +171,6 @@ export const BOOSTER_COSTS = {
   magnet: 120,
   clearTray: 150,
   extraBox: 100,
-  revive: 100
+  revive: 100,
+  refillHearts: 100
 };

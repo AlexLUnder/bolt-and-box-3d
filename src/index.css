@@ -1994,3 +1994,116 @@ button:active:not(:disabled) {
   position: relative;
   overflow: hidden;
 }
+
+/* ==================== NEXT BOX PILL, SETTINGS & UNIFORM MODAL STYLES ==================== */
+.rail-and-next {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.rail-and-next .buffer-rail {
+  flex: 1;
+}
+
+.next-box-chip {
+  height: 48px;
+  min-width: 44px;
+  padding: 4px 6px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 3px 0 rgba(148, 163, 184, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.next-lbl {
+  font-size: 8px;
+  font-weight: 900;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.next-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.modal-x-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.victory-ribbon.gold-ribbon {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 0 #92400e, 0 8px 16px rgba(180, 83, 9, 0.3);
+  text-shadow: 0 2px 0 #78350f;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.setting-row {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 3px 0 #cbd5e1;
+  border-radius: 16px;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.setting-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.toggle-pill {
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.toggle-pill.on {
+  background: #16a34a;
+  box-shadow: 0 2px 0 #14532d;
+}
+
+.toggle-pill.off {
+  background: #94a3b8;
+  box-shadow: 0 2px 0 #64748b;
+}

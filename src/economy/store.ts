@@ -1,4 +1,4 @@
-import { CPE_LADDER, GEO_PRESETS, IAP_SKUS } from './config';
+import { CPE_LADDER, GEO_PRESETS, HEART_REGEN_MS, IAP_SKUS } from './config';
 import { EconomyState, GeoPresetId, PostbackEvent } from '../engine/types';
 
 const STORAGE_KEY = 'bolt_box_3d_economy_v1';
@@ -9,6 +9,10 @@ export function createInitialEconomy(): EconomyState {
     coins: 220,
     hearts: 5,
     maxHearts: 5,
+    lastHeartRegenTs: Date.now(),
+    musicEnabled: true,
+    sfxEnabled: true,
+    hapticsEnabled: true,
     streak: 0,
     noAds: false,
     piggyBankCoins: 180,
@@ -34,11 +38,26 @@ export function createInitialEconomy(): EconomyState {
   };
 }
 
+export function syncHeartRegen(state: EconomyState, now = Date.now()): EconomyState {
+  if (state.hearts >= state.maxHearts) {
+    return state.lastHeartRegenTs === now ? state : { ...state, lastHeartRegenTs: now };
+  }
+  const elapsed = Math.max(0, now - (state.lastHeartRegenTs || now));
+  const gained = Math.floor(elapsed / HEART_REGEN_MS);
+  if (gained <= 0) return state;
+  const nextHearts = Math.min(state.maxHearts, state.hearts + gained);
+  return {
+    ...state,
+    hearts: nextHearts,
+    lastHeartRegenTs: nextHearts >= state.maxHearts ? now : state.lastHeartRegenTs + gained * HEART_REGEN_MS
+  };
+}
+
 export function loadEconomy(): EconomyState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createInitialEconomy();
-    return { ...createInitialEconomy(), ...JSON.parse(raw) };
+    return syncHeartRegen({ ...createInitialEconomy(), ...JSON.parse(raw) });
   } catch {
     return createInitialEconomy();
   }

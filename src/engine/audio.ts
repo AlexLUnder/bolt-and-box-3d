@@ -55,7 +55,8 @@ class SoundEngine {
   private bar = 0;
   private lastNoteIdx = 2;
   private mood: MusicMood = 'lobby';
-  private _muted = false;
+  private musicEnabled = true;
+  private sfxEnabled = true;
   private wasPlayingBeforeBg = false;
   private lifecycleBound = false;
 
@@ -74,7 +75,7 @@ class SoundEngine {
     };
 
     const resumeBg = () => {
-      if (document.hidden || this._muted) return;
+      if (document.hidden || !this.musicEnabled) return;
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume().catch(() => {});
       }
@@ -90,19 +91,35 @@ class SoundEngine {
     });
     window.addEventListener('pagehide', pauseBg);
     window.addEventListener('pageshow', resumeBg);
+
+    // Native Android BridgeActivity.onPause/onResume hook
+    (window as unknown as { __setAppPaused?: (p: boolean) => void }).__setAppPaused = (paused: boolean) => {
+      if (paused) pauseBg();
+      else resumeBg();
+    };
   }
 
   public get muted(): boolean {
-    return this._muted;
+    return !this.musicEnabled && !this.sfxEnabled;
   }
 
   public set muted(val: boolean) {
-    this._muted = val;
-    if (val) {
+    this.setMusicEnabled(!val);
+    this.setSfxEnabled(!val);
+  }
+
+  public setMusicEnabled(enabled: boolean) {
+    this.musicEnabled = enabled;
+    if (!enabled) {
+      this.wasPlayingBeforeBg = false;
       this.stopMusic();
-    } else {
+    } else if (this.ctx) {
       this.startMusic();
     }
+  }
+
+  public setSfxEnabled(enabled: boolean) {
+    this.sfxEnabled = enabled;
   }
 
   public setMood(nextMood: MusicMood) {
@@ -114,8 +131,9 @@ class SoundEngine {
     }
   }
 
-  private ensureCtx(): AudioContext | null {
-    if (this._muted) return null;
+  private ensureCtx(forType: 'music' | 'sfx' = 'sfx'): AudioContext | null {
+    if (forType === 'music' && !this.musicEnabled) return null;
+    if (forType === 'sfx' && !this.sfxEnabled) return null;
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx =
         window.AudioContext ||
@@ -130,8 +148,8 @@ class SoundEngine {
 
   public unlockAndStartMusic() {
     this.bindLifecycle();
-    if (this._muted) return;
-    const ctx = this.ensureCtx();
+    if (!this.musicEnabled) return;
+    const ctx = this.ensureCtx('music');
     if (!ctx) return;
     if (this.bgmTimer === null) {
       this.startMusic();
@@ -164,15 +182,15 @@ class SoundEngine {
   }
 
   public startMusic() {
-    if (this._muted || typeof window === 'undefined') return;
+    if (!this.musicEnabled || typeof window === 'undefined') return;
     if (this.bgmTimer !== null) return;
-    this.ensureCtx();
+    this.ensureCtx('music');
 
     const stepMs = this.mood === 'focus' ? 245 : this.mood === 'lounge' ? 310 : 280;
 
     const tick = () => {
-      if (this._muted) return;
-      const ctx = this.ensureCtx();
+      if (!this.musicEnabled) return;
+      const ctx = this.ensureCtx('music');
       if (!ctx || ctx.state !== 'running') return;
 
       const prog = PROGRESSIONS[this.mood];

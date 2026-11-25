@@ -1,6 +1,9 @@
-// Safe mobile haptics helper (uses Vibration API when supported, no-op on desktop)
+// Safe mobile haptics helper with user toggle
+
+let enabled = true;
 
 function vib(pattern: number | number[]) {
+  if (!enabled) return;
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       navigator.vibrate(pattern);
@@ -11,6 +14,12 @@ function vib(pattern: number | number[]) {
 }
 
 export const haptics = {
+  get enabled() {
+    return enabled;
+  },
+  setEnabled: (v: boolean) => {
+    enabled = v;
+  },
   unscrew: () => vib(12),
   locked: () => vib([10, 22, 10]),
   plateDrop: () => vib(24),

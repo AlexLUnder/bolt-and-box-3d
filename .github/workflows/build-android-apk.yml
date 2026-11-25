@@ -54,3 +54,43 @@ jobs:
               --title "Bolt & Box 3D — Latest Android APK" \
               --notes "Direct sideload APK optimized for Galaxy Z Fold (cover + unfolded)."
           fi
+
+      # Optional Google Play Internal Testing signed .aab build.
+      # Automatically skipped until ANDROID_KEYSTORE_BASE64 secret is added to the repo.
+      - name: Build & sign Release AAB (Google Play Internal Testing)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          KEYSTORE_PATH="$RUNNER_TEMP/release-keystore.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
+
+          cd android
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$ANDROID_KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASS"
+
+          AAB_PATH="app/build/outputs/bundle/release/app-release.aab"
+          if ! unzip -l "$AAB_PATH" | grep -qE 'META-INF/.*\.(RSA|DSA|EC|SF)$'; then
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore "$KEYSTORE_PATH" \
+              -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASS" \
+              "$AAB_PATH" "$ANDROID_KEY_ALIAS"
+          fi
+          jarsigner -verify "$AAB_PATH"
+          cp "$AAB_PATH" ../BoltAndBox3D-release.aab
+          rm -f "$KEYSTORE_PATH"
+
+      - name: Upload Release AAB artifact
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: BoltAndBox3D-release-aab
+          path: BoltAndBox3D-release.aab

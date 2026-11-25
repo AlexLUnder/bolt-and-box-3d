@@ -5,6 +5,7 @@ import { AdBadgeIcon, HexBoltIcon } from './GameIcons';
 
 interface CollectorDockProps {
   activeBoxes: CollectorBox[];
+  nextBoxColor?: BoltColor;
   maxBoxSlots: number;
   buffer: BoltColor[];
   maxBufferSlots: number;
@@ -14,6 +15,7 @@ interface CollectorDockProps {
 
 export function CollectorDock({
   activeBoxes,
+  nextBoxColor,
   maxBoxSlots,
   buffer,
   maxBufferSlots,
@@ -56,7 +58,9 @@ export function CollectorDock({
                   </div>
                 ))}
               </div>
-              <span className="crate-label">{c.label}</span>
+              <span className="crate-label">
+                {c.symbol} {c.label}
+              </span>
             </div>
           );
         })}
@@ -72,31 +76,46 @@ export function CollectorDock({
         ))}
       </div>
 
-      {/* Machined Buffer Organizer Rail */}
-      <div className={`buffer-rail ${danger ? 'danger' : ''}`}>
-        {Array.from({ length: maxBufferSlots }).map((_, idx) => {
-          const color = buffer[idx];
-          return (
-            <div key={`buf_${idx}`} data-rail-idx={idx} className={`rail-well ${danger && !color ? 'warn' : ''}`}>
-              {color && (
-                <div className="bolt-pop">
-                  <HexBoltIcon color={color} size={27} />
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Machined Buffer Organizer Rail + Strategic NEXT Box Preview */}
+      <div className="rail-and-next">
+        <div className={`buffer-rail ${danger ? 'danger' : ''}`}>
+          {Array.from({ length: maxBufferSlots }).map((_, idx) => {
+            const color = buffer[idx];
+            return (
+              <div key={`buf_${idx}`} data-rail-idx={idx} className={`rail-well ${danger && !color ? 'warn' : ''}`}>
+                {color && (
+                  <div className="bolt-pop" title={`${BOLT_COLORS[color].label} (${BOLT_COLORS[color].symbol})`}>
+                    <HexBoltIcon color={color} size={27} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-        {Array.from({ length: lockedBufferCount }).map((_, idx) => (
-          <button
-            key={`lock_buf_${idx}`}
-            className="rail-well locked"
-            onClick={onUnlockExtraSlot}
-            title="Unlock extra holding slot"
+          {Array.from({ length: lockedBufferCount }).map((_, idx) => (
+            <button
+              key={`lock_buf_${idx}`}
+              className="rail-well locked"
+              onClick={onUnlockExtraSlot}
+              title="Unlock extra holding slot"
+            >
+              <AdBadgeIcon size={13} />
+            </button>
+          ))}
+        </div>
+
+        {nextBoxColor && (
+          <div
+            className="next-box-chip"
+            title={`Next box: ${BOLT_COLORS[nextBoxColor].label}`}
+            style={{ borderColor: BOLT_COLORS[nextBoxColor].hex }}
           >
-            <AdBadgeIcon size={13} />
-          </button>
-        ))}
+            <span className="next-lbl">NEXT</span>
+            <span className="next-dot" style={{ background: BOLT_COLORS[nextBoxColor].hex }}>
+              {BOLT_COLORS[nextBoxColor].symbol}
+            </span>
+          </div>
+        )}
       </div>
     </section>
   );
