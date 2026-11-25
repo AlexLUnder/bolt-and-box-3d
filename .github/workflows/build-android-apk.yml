@@ -58,13 +58,17 @@ jobs:
       # Optional Google Play Internal Testing signed .aab build.
       # Automatically skipped until ANDROID_KEYSTORE_BASE64 secret is added to the repo.
       - name: Build & sign Release AAB (Google Play Internal Testing)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 not configured — skipping signed AAB build."
+            exit 0
+          fi
+
           KEYSTORE_PATH="$RUNNER_TEMP/release-keystore.jks"
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           KEY_PASS="${ANDROID_KEY_PASSWORD:-$ANDROID_KEYSTORE_PASSWORD}"
@@ -89,8 +93,8 @@ jobs:
           rm -f "$KEYSTORE_PATH"
 
       - name: Upload Release AAB artifact
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: BoltAndBox3D-release-aab
           path: BoltAndBox3D-release.aab
+          if-no-files-found: ignore
