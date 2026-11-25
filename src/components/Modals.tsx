@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Award, Coins, Flame, Layers, PiggyBank, Play, ShieldCheck, ShoppingBag, Sparkles, X } from 'lucide-react';
+import { Flame, Layers, ShieldCheck, ShoppingBag, Sparkles, X } from 'lucide-react';
 import { BOOSTER_COSTS, GEO_PRESETS, IAP_SKUS } from '../economy/config';
 import { HANDCRAFTED_LEVELS } from '../engine/levelGenerator';
 import { EconomyState } from '../engine/types';
+import {
+  AdBadgeIcon,
+  GoldCoinIcon,
+  NoAdsMedallionIcon,
+  PiggyMedallionIcon,
+  StreakFlameIcon
+} from './GameIcons';
 
 export interface ActiveAdModal {
   type: 'rv' | 'inter';
@@ -63,10 +70,44 @@ export function MockAdOverlay({
   );
 }
 
+function VictoryStar({ size = 42, delay = 0 }: { size?: number; delay?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      className="victory-star"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <defs>
+        <linearGradient id="vStarG" x1="24" y1="3" x2="24" y2="44" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#fef08a" />
+          <stop offset="50%" stopColor="#fbbf24" />
+          <stop offset="100%" stopColor="#d97706" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M24 4L29.9 16.2L43.2 18.1L33.5 27.5L35.8 40.8L24 34.5L12.2 40.8L14.5 27.5L4.8 18.1L18.1 16.2L24 4Z"
+        fill="url(#vStarG)"
+        stroke="#92400e"
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M24 8.5L27.2 15.5L21 18L16.5 16L24 8.5Z"
+        fill="#ffffff"
+        opacity="0.5"
+      />
+    </svg>
+  );
+}
+
 export function WinModal({
   level,
   coinReward,
   streak,
+  raceWins,
   piggyCoins,
   piggyMax,
   onNextLevel,
@@ -76,46 +117,91 @@ export function WinModal({
   level: number;
   coinReward: number;
   streak: number;
+  raceWins: number;
   piggyCoins: number;
   piggyMax: number;
   onNextLevel: () => void;
   onDoubleCoinsRv: () => void;
   onOpenShop: () => void;
 }) {
+  const piggyPct = Math.min(100, Math.round((piggyCoins / piggyMax) * 100));
+
   return (
     <div className="modal-backdrop">
-      <div className="modal-card">
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <Award size={44} color="#fbbf24" />
-        </div>
-        <div className="modal-title">Level {level} Cleared!</div>
-        <div className="modal-sub">
-          +{coinReward} Coins earned · Win Streak: <b style={{ color: '#fcd34d' }}>{streak}</b>
+      <div className="victory-card">
+        {/* Sunburst Glow + 3 Animated 3D Stars */}
+        <div className="victory-stars-row">
+          <div style={{ transform: 'rotate(-14deg) translateY(8px)' }}>
+            <VictoryStar size={44} delay={60} />
+          </div>
+          <div style={{ transform: 'translateY(-4px)' }}>
+            <VictoryStar size={58} delay={180} />
+          </div>
+          <div style={{ transform: 'rotate(14deg) translateY(8px)' }}>
+            <VictoryStar size={44} delay={300} />
+          </div>
         </div>
 
-        <div className="shop-item" style={{ background: 'rgba(251, 191, 36, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <PiggyBank size={20} color="#f472b6" />
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700 }}>Piggy Bank</div>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                {piggyCoins} / {piggyMax} Coins banked
-              </div>
+        {/* Glossy Ribbon Banner */}
+        <div className="victory-ribbon">
+          <span>LEVEL {level} CLEARED!</span>
+        </div>
+
+        {/* Reward Summary Strip */}
+        <div className="victory-rewards-row">
+          <div className="reward-pill-box">
+            <GoldCoinIcon size={28} />
+            <div className="reward-pill-info">
+              <span className="reward-big">+{coinReward}</span>
+              <span className="reward-lbl">Coins</span>
+            </div>
+          </div>
+
+          <div className="reward-pill-box streak-box">
+            <StreakFlameIcon size={28} />
+            <div className="reward-pill-info">
+              <span className="reward-big">{streak}</span>
+              <span className="reward-lbl">Rush {Math.min(7, raceWins)}/7</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Piggy Bank Progress Card */}
+        <div className="victory-piggy-card">
+          <PiggyMedallionIcon size={36} />
+          <div className="victory-piggy-mid">
+            <div className="victory-piggy-top">
+              <span>Piggy Bank</span>
+              <span>
+                {piggyCoins}/{piggyMax}
+              </span>
+            </div>
+            <div className="quick-bar">
+              <div className="quick-bar-fill" style={{ width: `${piggyPct}%` }} />
             </div>
           </div>
           {piggyCoins >= piggyMax && (
-            <button className="price-btn" onClick={onOpenShop}>
-              Smash $2.99
+            <button className="candy-buy-btn" style={{ padding: '6px 10px', fontSize: 12 }} onClick={onOpenShop}>
+              $2.99
             </button>
           )}
         </div>
 
-        <button className="btn-gold" onClick={onDoubleCoinsRv}>
-          <Play size={15} fill="currentColor" /> Claim 2× Coins (+{coinReward})
-        </button>
-        <button className="btn-primary" onClick={onNextLevel}>
-          Next Level →
-        </button>
+        {/* Candy-Glossy CTAs */}
+        <div className="victory-actions">
+          <button className="candy-gold-btn" onClick={onDoubleCoinsRv}>
+            <span className="candy-shine" />
+            <AdBadgeIcon size={16} />
+            <span>CLAIM 2× COINS (+{coinReward * 2})</span>
+          </button>
+
+          <button className="candy-play-btn" style={{ height: 54 }} onClick={onNextLevel}>
+            <span className="candy-shine" />
+            <span className="candy-play-text" style={{ fontSize: 20 }}>
+              NEXT LEVEL →
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -140,42 +226,55 @@ export function FailModal({
 }) {
   return (
     <div className="modal-backdrop">
-      <div className="modal-card" style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}>
-        <div className="modal-title" style={{ color: '#fca5a5' }}>
-          Tray Full!
+      <div className="victory-card fail-card">
+        <div className="victory-ribbon fail-ribbon">
+          <span>TRAY FULL!</span>
         </div>
-        <div className="modal-sub">
+
+        <div className="modal-sub" style={{ fontWeight: 700, color: '#334155', marginTop: 2 }}>
           {streak > 0 ? (
             <>
-              Don&apos;t lose your <b style={{ color: '#fcd34d' }}>{streak}-win streak</b>! Clear 3 buffer bolts &amp; keep playing.
+              Don&apos;t lose your <b style={{ color: '#ea580c' }}>{streak}-win streak</b> &amp; Bolt Rush progress!
             </>
           ) : (
-            <>You&apos;re just a few bolts away! Clear 3 tray slots to continue.</>
+            <>You&apos;re just a few bolts away! Clear tray slots to keep going.</>
           )}
         </div>
 
-        <button className="btn-primary" onClick={onReviveRv}>
-          <Play size={15} fill="currentColor" /> Watch Ad to Revive (Free)
-        </button>
+        <div className="victory-actions">
+          <button className="candy-play-btn" style={{ height: 52 }} onClick={onReviveRv}>
+            <span className="candy-shine" />
+            <AdBadgeIcon size={17} />
+            <span className="candy-play-text" style={{ fontSize: 18 }}>
+              FREE REVIVE
+            </span>
+          </button>
 
-        <button
-          className="btn-gold"
-          disabled={coins < BOOSTER_COSTS.revive}
-          style={{ opacity: coins < BOOSTER_COSTS.revive ? 0.5 : 1 }}
-          onClick={onReviveCoins}
-        >
-          <Coins size={15} /> Revive for {BOOSTER_COSTS.revive} Coins
-        </button>
+          <button
+            className="candy-gold-btn"
+            disabled={coins < BOOSTER_COSTS.revive}
+            style={{ opacity: coins < BOOSTER_COSTS.revive ? 0.5 : 1 }}
+            onClick={onReviveCoins}
+          >
+            <span className="candy-shine" />
+            <GoldCoinIcon size={18} />
+            <span>REVIVE · {BOOSTER_COSTS.revive} COINS</span>
+          </button>
+        </div>
 
         {!noAds && (
-          <div className="shop-item featured">
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#fde68a', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Sparkles size={12} /> Starter Pack + Revive
+          <div className="toy-shop-card featured" style={{ marginTop: 2 }}>
+            <div className="best-ribbon">REVIVE + NO ADS</div>
+            <div className="toy-shop-left">
+              <NoAdsMedallionIcon size={34} />
+              <div>
+                <div className="toy-shop-name" style={{ fontSize: 13 }}>
+                  Starter Pack
+                </div>
+                <div className="toy-shop-sub">No Forced Ads + 600 Coins</div>
               </div>
-              <div style={{ fontSize: 10, color: '#cbd5e1' }}>No Forced Ads + 600 Coins (Freecash $4 Cashback!)</div>
             </div>
-            <button className="price-btn" onClick={onBuyStarter}>
+            <button className="candy-buy-btn" onClick={onBuyStarter}>
               $4.99
             </button>
           </div>

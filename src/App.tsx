@@ -780,6 +780,7 @@ export default function App() {
             level={levelConfig.level}
             coinReward={levelConfig.coinReward}
             streak={economy.streak}
+            raceWins={economy.raceWins}
             piggyCoins={economy.piggyBankCoins}
             piggyMax={economy.piggyBankMax}
             onNextLevel={handleNextLevel}
