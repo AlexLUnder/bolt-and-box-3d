@@ -88,6 +88,7 @@ export default function App() {
   const [tutStepsDone, setTutStepsDone] = useState(0);
   const [activeAd, setActiveAd] = useState<ActiveAdModal | null>(null);
   const playableTapsRef = useRef(0);
+  const returnToWinAfterShopRef = useRef(false);
   const shellRef = useRef<HTMLDivElement | null>(null);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -434,7 +435,14 @@ export default function App() {
       if (showLives) { setShowLives(false); return 'handled'; }
       if (showDaily) { setShowDaily(false); return 'handled'; }
       if (showRace) { setShowRace(false); return 'handled'; }
-      if (showShop) { setShowShop(false); return 'handled'; }
+      if (showShop) {
+        setShowShop(false);
+        if (returnToWinAfterShopRef.current) {
+          returnToWinAfterShopRef.current = false;
+          setShowWin(true);
+        }
+        return 'handled';
+      }
       if (showLevels) { setShowLevels(false); return 'handled'; }
       if (showFail) { setShowFail(false); setScreen('menu'); return 'handled'; }
       if (showWin) { setShowWin(false); setScreen('menu'); return 'handled'; }
@@ -860,6 +868,7 @@ export default function App() {
               })
             }
             onOpenShop={() => {
+              returnToWinAfterShopRef.current = true;
               setShowWin(false);
               setShowShop(true);
             }}
@@ -879,7 +888,17 @@ export default function App() {
         )}
 
         {showShop && (
-          <ShopModal economy={economy} onBuySku={handleBuySku} onClose={() => setShowShop(false)} />
+          <ShopModal
+            economy={economy}
+            onBuySku={handleBuySku}
+            onClose={() => {
+              setShowShop(false);
+              if (returnToWinAfterShopRef.current || (screen === 'play' && boltsRemaining === 0 && buffer.length === 0)) {
+                returnToWinAfterShopRef.current = false;
+                setShowWin(true);
+              }
+            }}
+          />
         )}
 
         {showLevels && (
