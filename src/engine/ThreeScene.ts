@@ -108,6 +108,8 @@ export class BoltScene {
   private velPhi = 0;
   private dragging = false;
   private showcaseMode = false;
+  private inspectMode = false;
+  private inspectAutoSpin = true;
   private pointerDownPos = { x: 0, y: 0 };
   private lastPointerPos = { x: 0, y: 0 };
   private shakeTime = 0;
@@ -191,9 +193,24 @@ export class BoltScene {
   public setShowcaseMode(enabled: boolean) {
     this.showcaseMode = enabled;
     if (enabled) {
+      this.inspectMode = false;
       this.targetTheta = null;
       this.phi = 0.24;
     }
+  }
+
+  public setInspectMode(enabled: boolean, autoSpin = true) {
+    this.inspectMode = enabled;
+    this.inspectAutoSpin = autoSpin;
+    if (enabled) {
+      this.showcaseMode = false;
+      this.targetTheta = null;
+    }
+  }
+
+  public setPlatesVisible(visible: boolean) {
+    for (const g of this.plateMeshes.values()) g.visible = visible;
+    for (const b of this.boltMeshes.values()) b.group.visible = visible;
   }
 
   public setHintBolt(boltId: string | null) {
@@ -712,6 +729,7 @@ export class BoltScene {
   private handlePointerUp = (e: PointerEvent) => {
     if (!this.dragging) return;
     this.dragging = false;
+    if (this.inspectMode) return;
     const dist = Math.hypot(e.clientX - this.pointerDownPos.x, e.clientY - this.pointerDownPos.y);
     if (dist < 10) {
       this.pickBolt(e.clientX, e.clientY);
@@ -770,7 +788,11 @@ export class BoltScene {
           this.targetTheta = null;
         }
       } else {
-        this.theta += this.velTheta;
+        if (this.inspectMode && this.inspectAutoSpin && Math.abs(this.velTheta) < 0.002) {
+          this.theta += dt * 0.45;
+        } else {
+          this.theta += this.velTheta;
+        }
         this.phi = Math.max(-0.9, Math.min(0.9, this.phi + this.velPhi));
         this.velTheta *= 0.91;
         this.velPhi *= 0.91;

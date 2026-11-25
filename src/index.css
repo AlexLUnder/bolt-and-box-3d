@@ -2107,3 +2107,78 @@ button:active:not(:disabled) {
   background: #94a3b8;
   box-shadow: 0 2px 0 #64748b;
 }
+
+/* ==================== 3D SANDBOX INSPECT MODE ==================== */
+.inspect-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 12px 14px 18px;
+}
+
+.inspect-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: auto;
+  max-width: 540px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.inspect-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.inspect-hint {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+}
+
+.inspect-tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.inspect-tool-btn {
+  height: 38px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 3px 0 #94a3b8;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspect-tool-btn.active {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #ffffff;
+  box-shadow: 0 3px 0 #1e40af;
+  color: #ffffff;
+}

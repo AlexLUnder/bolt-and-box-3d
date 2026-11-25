@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Flame, RotateCcw, RotateCw } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Flame, Play, RefreshCw, RotateCcw, RotateCw } from 'lucide-react';
 import { BoosterBar } from './components/BoosterBar';
 import { CollectorDock } from './components/CollectorDock';
 import { HexBoltIcon } from './components/GameIcons';
@@ -67,7 +67,9 @@ export default function App() {
   const [maxBufferSlots, setMaxBufferSlots] = useState(5);
   const [boltsRemaining, setBoltsRemaining] = useState(0);
 
-  const [screen, setScreen] = useState<'menu' | 'play'>(() => (IS_PLAYABLE_AD ? 'play' : 'menu'));
+  const [screen, setScreen] = useState<'menu' | 'play' | 'inspect'>(() => (IS_PLAYABLE_AD ? 'play' : 'menu'));
+  const [inspectShowPlates, setInspectShowPlates] = useState(false);
+  const [inspectAutoSpin, setInspectAutoSpin] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [showWin, setShowWin] = useState(false);
   const [showFail, setShowFail] = useState(false);
@@ -364,15 +366,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    sceneRef.current?.setShowcaseMode(screen === 'menu');
     if (screen === 'menu') {
+      sceneRef.current?.setInspectMode(false, false);
+      sceneRef.current?.setShowcaseMode(true);
+      sceneRef.current?.setPlatesVisible(true);
       sound.setMood('lobby');
-    } else if (levelConfig.difficulty !== 'normal') {
-      sound.setMood('focus');
+    } else if (screen === 'inspect') {
+      sceneRef.current?.setShowcaseMode(false);
+      sceneRef.current?.setInspectMode(true, inspectAutoSpin);
+      sceneRef.current?.setPlatesVisible(inspectShowPlates);
+      sound.setMood('lounge');
     } else {
-      sound.setMood(levelConfig.level % 2 === 0 ? 'lounge' : 'sunny');
+      sceneRef.current?.setShowcaseMode(false);
+      sceneRef.current?.setInspectMode(false, false);
+      sceneRef.current?.setPlatesVisible(true);
+      if (levelConfig.difficulty !== 'normal') {
+        sound.setMood('focus');
+      } else {
+        sound.setMood(levelConfig.level % 2 === 0 ? 'lounge' : 'sunny');
+      }
     }
-  }, [screen, levelConfig.level, levelConfig.difficulty]);
+  }, [screen, inspectAutoSpin, inspectShowPlates, levelConfig.level, levelConfig.difficulty]);
 
   // Position L1 interactive tutorial hand over the first exposed matching bolt
   useEffect(() => {
@@ -446,13 +460,18 @@ export default function App() {
       if (showLevels) { setShowLevels(false); return 'handled'; }
       if (showFail) { setShowFail(false); setScreen('menu'); return 'handled'; }
       if (showWin) { setShowWin(false); setScreen('menu'); return 'handled'; }
+      if (screen === 'inspect') {
+        initLevel(economy.level);
+        setScreen('menu');
+        return 'handled';
+      }
       if (screen === 'play') { setScreen('menu'); return 'handled'; }
       return 'exit';
     };
     return () => {
       delete w.__handleAndroidBack;
     };
-  }, [activeAd, screen, showDaily, showFail, showLevels, showLives, showRace, showSettings, showShop, showUa, showWin]);
+  }, [activeAd, economy.level, initLevel, screen, showDaily, showFail, showLevels, showLives, showRace, showSettings, showShop, showUa, showWin]);
 
   // Unlock Web Audio & start cozy BGM on first user tap/click (browser autoplay policy)
   useEffect(() => {
@@ -796,7 +815,9 @@ export default function App() {
             }}
             onPreviewShape={(lvl) => {
               initLevel(lvl);
-              showToast(`Inspecting LV.${lvl} 3D Model`);
+              setInspectShowPlates(false);
+              setInspectAutoSpin(true);
+              setScreen('inspect');
             }}
             onBuySku={handleBuySku}
             onOpenLives={() => setShowLives(true)}
@@ -805,6 +826,82 @@ export default function App() {
             onOpenSettings={() => setShowSettings(true)}
             onOpenUa={() => setShowUa(true)}
           />
+        )}
+
+        {/* 3D Sandbox Inspection Overlay */}
+        {screen === 'inspect' && (
+          <div className="inspect-overlay">
+            <header className="inspect-top">
+              <button
+                className="resource-pill"
+                style={{ padding: '0 12px', gap: 6 }}
+                onClick={() => {
+                  initLevel(economy.level);
+                  setScreen('menu');
+                }}
+              >
+                <ArrowLeft size={15} strokeWidth={2.6} />
+                <span className="res-val">Back</span>
+              </button>
+
+              <div className="toy-stage-ribbon">
+                <span>LV.{levelConfig.level}</span>
+                <span className="ribbon-sep">·</span>
+                <span>{levelConfig.title}</span>
+              </div>
+            </header>
+
+            <div className="inspect-bottom">
+              <div className="inspect-hint">Drag anywhere to rotate 360°</div>
+
+              <div className="inspect-tools">
+                <button
+                  className={`inspect-tool-btn ${!inspectShowPlates ? 'active' : ''}`}
+                  onClick={() => setInspectShowPlates((v) => !v)}
+                >
+                  {inspectShowPlates ? <Eye size={15} /> : <EyeOff size={15} />}
+                  <span>{inspectShowPlates ? 'With Plates' : 'Pure Model'}</span>
+                </button>
+
+                <button
+                  className={`inspect-tool-btn ${inspectAutoSpin ? 'active' : ''}`}
+                  onClick={() => setInspectAutoSpin((v) => !v)}
+                >
+                  <RefreshCw size={14} />
+                  <span>{inspectAutoSpin ? 'Spin ON' : 'Spin OFF'}</span>
+                </button>
+
+                <button
+                  className="inspect-tool-btn"
+                  onClick={() => sceneRef.current?.rotateBy(Math.PI / 2)}
+                  title="Rotate 90°"
+                >
+                  <RotateCw size={15} />
+                </button>
+              </div>
+
+              <button
+                className="candy-play-btn"
+                style={{ height: 52 }}
+                onClick={() => {
+                  sound.unlockAndStartMusic();
+                  if (economy.hearts <= 0) {
+                    setShowLives(true);
+                    return;
+                  }
+                  setEconomy((prev) => ({ ...prev, level: levelConfig.level }));
+                  initLevel(levelConfig.level);
+                  setScreen('play');
+                }}
+              >
+                <span className="candy-shine" />
+                <Play size={20} fill="#ffffff" />
+                <span className="candy-play-text" style={{ fontSize: 19 }}>
+                  PLAY LV.{levelConfig.level}
+                </span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Flying 2D Bolt Arcs (from 3D screw -> Crate / Buffer Well) */}

@@ -249,10 +249,7 @@ export function MainMenu({
                   {unlocked ? (
                     <button
                       className="toy-inspect-btn"
-                      onClick={() => {
-                        onPreviewShape(m.level);
-                        setTab('home');
-                      }}
+                      onClick={() => onPreviewShape(m.level)}
                     >
                       Inspect 3D
                     </button>
